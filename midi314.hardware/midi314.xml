@@ -1,0 +1,233 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<export version="D">
+  <design>
+    <source>/home/guillaume/Travail/midi314/midi314.hardware/midi314.sch</source>
+    <date>jeu. 01 mars 2018 21:47:45 CET</date>
+    <tool>Eeschema 5.0.0-rc1-44a33f2~62~ubuntu16.04.1</tool>
+    <sheet number="1" name="/" tstamps="/">
+      <title_block>
+        <title/>
+        <company/>
+        <rev/>
+        <date/>
+        <source>midi314.sch</source>
+        <comment number="1" value=""/>
+        <comment number="2" value=""/>
+        <comment number="3" value=""/>
+        <comment number="4" value=""/>
+      </title_block>
+    </sheet>
+  </design>
+  <components>
+    <comp ref="SW0">
+      <value>SW_Push</value>
+      <footprint>Button_Switch_Keyboard:SW_Cherry_MX1A_1.00u_PCB</footprint>
+      <libsource lib="Switch" part="SW_Push"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>5A9861D9</tstamp>
+    </comp>
+    <comp ref="SW1">
+      <value>SW_Push</value>
+      <footprint>Button_Switch_Keyboard:SW_Cherry_MX1A_1.00u_PCB</footprint>
+      <libsource lib="Switch" part="SW_Push"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>5A98640C</tstamp>
+    </comp>
+    <comp ref="SW2">
+      <value>SW_Push</value>
+      <footprint>Button_Switch_Keyboard:SW_Cherry_MX1A_1.00u_PCB</footprint>
+      <libsource lib="Switch" part="SW_Push"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>5A986AFA</tstamp>
+    </comp>
+    <comp ref="SW3">
+      <value>SW_Push</value>
+      <footprint>Button_Switch_Keyboard:SW_Cherry_MX1A_1.00u_PCB</footprint>
+      <libsource lib="Switch" part="SW_Push"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>5A986B4D</tstamp>
+    </comp>
+    <comp ref="SW100">
+      <value>SW_Push</value>
+      <footprint>Button_Switch_Keyboard:SW_Cherry_MX1A_1.00u_PCB</footprint>
+      <libsource lib="Switch" part="SW_Push"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>5A986B83</tstamp>
+    </comp>
+    <comp ref="SW102">
+      <value>SW_Push</value>
+      <footprint>Button_Switch_Keyboard:SW_Cherry_MX1A_1.00u_PCB</footprint>
+      <libsource lib="Switch" part="SW_Push"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>5A986BBB</tstamp>
+    </comp>
+    <comp ref="SW101">
+      <value>SW_Push</value>
+      <footprint>Button_Switch_Keyboard:SW_Cherry_MX1A_1.00u_PCB</footprint>
+      <libsource lib="Switch" part="SW_Push"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>5A986BD9</tstamp>
+    </comp>
+    <comp ref="SW103">
+      <value>SW_Push</value>
+      <footprint>Button_Switch_Keyboard:SW_Cherry_MX1A_1.00u_PCB</footprint>
+      <libsource lib="Switch" part="SW_Push"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>5A986D9E</tstamp>
+    </comp>
+    <comp ref="D1">
+      <value>1N4148</value>
+      <footprint>Diode_THT:D_DO-35_SOD27_Horizontal_RM10</footprint>
+      <datasheet>http://www.nxp.com/documents/data_sheet/1N4148_1N4448.pdf</datasheet>
+      <libsource lib="Diode" part="1N4148"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>5A986FE2</tstamp>
+    </comp>
+    <comp ref="D2">
+      <value>1N4148</value>
+      <footprint>Diode_THT:D_DO-35_SOD27_Horizontal_RM10</footprint>
+      <datasheet>http://www.nxp.com/documents/data_sheet/1N4148_1N4448.pdf</datasheet>
+      <libsource lib="Diode" part="1N4148"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>5A987173</tstamp>
+    </comp>
+    <comp ref="D3">
+      <value>1N4148</value>
+      <footprint>Diode_THT:D_DO-35_SOD27_Horizontal_RM10</footprint>
+      <datasheet>http://www.nxp.com/documents/data_sheet/1N4148_1N4448.pdf</datasheet>
+      <libsource lib="Diode" part="1N4148"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>5A9871BD</tstamp>
+    </comp>
+    <comp ref="D4">
+      <value>1N4148</value>
+      <footprint>Diode_THT:D_DO-35_SOD27_Horizontal_RM10</footprint>
+      <datasheet>http://www.nxp.com/documents/data_sheet/1N4148_1N4448.pdf</datasheet>
+      <libsource lib="Diode" part="1N4148"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>5A987203</tstamp>
+    </comp>
+  </components>
+  <libparts>
+    <libpart lib="Diode" part="1N4148">
+      <aliases>
+        <alias>1N4448</alias>
+        <alias>1N4149</alias>
+        <alias>1N4151</alias>
+        <alias>1N914</alias>
+        <alias>BA243</alias>
+        <alias>BA244</alias>
+        <alias>BA282</alias>
+        <alias>BA283</alias>
+        <alias>BAV17</alias>
+        <alias>BAV18</alias>
+        <alias>BAV19</alias>
+        <alias>BAV20</alias>
+        <alias>BAV21</alias>
+        <alias>BAW75</alias>
+        <alias>BAW76</alias>
+        <alias>BAY93</alias>
+      </aliases>
+      <description>100V 0.15A standard switching diode, DO-35</description>
+      <docs>http://www.nxp.com/documents/data_sheet/1N4148_1N4448.pdf</docs>
+      <footprints>
+        <fp>D*DO?35*</fp>
+        <fp>D*SOD27*</fp>
+      </footprints>
+      <fields>
+        <field name="Reference">D</field>
+        <field name="Value">1N4148</field>
+        <field name="Footprint">Diode_THT:D_DO-35_SOD27_Horizontal_RM10</field>
+      </fields>
+      <pins>
+        <pin num="1" name="K" type="passive"/>
+        <pin num="2" name="A" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="Switch" part="SW_Push">
+      <description>Push button switch, generic, two pins</description>
+      <fields>
+        <field name="Reference">SW</field>
+        <field name="Value">SW_Push</field>
+      </fields>
+      <pins>
+        <pin num="1" name="1" type="passive"/>
+        <pin num="2" name="2" type="passive"/>
+      </pins>
+    </libpart>
+  </libparts>
+  <libraries>
+    <library logical="Diode">
+      <uri>/usr/share/kicad/library/Diode.lib</uri>
+    </library>
+    <library logical="Switch">
+      <uri>/usr/share/kicad/library/Switch.lib</uri>
+    </library>
+  </libraries>
+  <nets>
+    <net code="1" name="Net-(SW103-Pad1)">
+      <node ref="SW103" pin="1"/>
+    </net>
+    <net code="2" name="Net-(D1-Pad2)">
+      <node ref="SW0" pin="1"/>
+      <node ref="D1" pin="2"/>
+    </net>
+    <net code="3" name="Net-(D4-Pad2)">
+      <node ref="D4" pin="2"/>
+      <node ref="SW3" pin="1"/>
+    </net>
+    <net code="4" name="Net-(D3-Pad2)">
+      <node ref="D3" pin="2"/>
+      <node ref="SW2" pin="1"/>
+    </net>
+    <net code="5" name="Net-(D2-Pad2)">
+      <node ref="D2" pin="2"/>
+      <node ref="SW1" pin="1"/>
+    </net>
+    <net code="6" name="Net-(D4-Pad1)">
+      <node ref="D4" pin="1"/>
+    </net>
+    <net code="7" name="Net-(D3-Pad1)">
+      <node ref="D3" pin="1"/>
+    </net>
+    <net code="8" name="Net-(D2-Pad1)">
+      <node ref="D2" pin="1"/>
+    </net>
+    <net code="9" name="Net-(D1-Pad1)">
+      <node ref="D1" pin="1"/>
+    </net>
+    <net code="10" name="Net-(SW103-Pad2)">
+      <node ref="SW103" pin="2"/>
+    </net>
+    <net code="11" name="Net-(SW101-Pad2)">
+      <node ref="SW101" pin="2"/>
+    </net>
+    <net code="12" name="Net-(SW101-Pad1)">
+      <node ref="SW101" pin="1"/>
+    </net>
+    <net code="13" name="Net-(SW102-Pad2)">
+      <node ref="SW102" pin="2"/>
+    </net>
+    <net code="14" name="Net-(SW102-Pad1)">
+      <node ref="SW102" pin="1"/>
+    </net>
+    <net code="15" name="Net-(SW100-Pad2)">
+      <node ref="SW100" pin="2"/>
+    </net>
+    <net code="16" name="Net-(SW100-Pad1)">
+      <node ref="SW100" pin="1"/>
+    </net>
+    <net code="17" name="Net-(SW3-Pad2)">
+      <node ref="SW3" pin="2"/>
+    </net>
+    <net code="18" name="Net-(SW2-Pad2)">
+      <node ref="SW2" pin="2"/>
+    </net>
+    <net code="19" name="Net-(SW1-Pad2)">
+      <node ref="SW1" pin="2"/>
+    </net>
+    <net code="20" name="Net-(SW0-Pad2)">
+      <node ref="SW0" pin="2"/>
+    </net>
+  </nets>
+</export>
