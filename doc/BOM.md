@@ -5,6 +5,7 @@
 | Diodes 1N4148              |  42 |                                             |
 | Arduino Pro Micro          |   1 | MIDI controller                             |
 | Raspberry Pi 3             |   1 | MIDI instrument                             |
+| LCD display                |   1 |                                             |
 | Behringer U-Control UCA222 |   1 | USB sound card                              |
 | USB cable A-micro B        |   1 | Arduino to Pi                               |
 | PCB                        |   1 |                                             |
