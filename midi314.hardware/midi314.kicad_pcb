@@ -2,7 +2,7 @@
 
   (general
     (thickness 1.6)
-    (drawings 7)
+    (drawings 8)
     (tracks 363)
     (zones 0)
     (modules 90)
@@ -4625,6 +4625,18 @@
     )
   )
 
+  (dimension 19.05 (width 0.3) (layer Cmts.User)
+    (gr_text "19,050 mm" (at 74.93 190.58) (layer Cmts.User)
+      (effects (font (size 1.5 1.5) (thickness 0.3)))
+    )
+    (feature1 (pts (xy 84.455 184.785) (xy 84.455 191.93)))
+    (feature2 (pts (xy 65.405 184.785) (xy 65.405 191.93)))
+    (crossbar (pts (xy 65.405 189.23) (xy 84.455 189.23)))
+    (arrow1a (pts (xy 84.455 189.23) (xy 83.328496 189.816421)))
+    (arrow1b (pts (xy 84.455 189.23) (xy 83.328496 188.643579)))
+    (arrow2a (pts (xy 65.405 189.23) (xy 66.531504 189.816421)))
+    (arrow2b (pts (xy 65.405 189.23) (xy 66.531504 188.643579)))
+  )
   (gr_text "midi@3:14 -- Guillaume Savaton -- 2018-03-08" (at 97.79 121.92) (layer F.SilkS)
     (effects (font (size 1.5 1.5) (thickness 0.3)))
   )
