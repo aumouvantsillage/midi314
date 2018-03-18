@@ -1,45 +1,46 @@
 
-#include "MIDIUSB.h"
-#include "pitchToNote.h"
+#include <MIDIUSB.h>
+#include <pitchToNote.h>
+#include <TimerThree.h>
 
 // Pins connected to each row of the keyboard (from top to bottom).
-const byte row_pins[] = {7, 5, 3, 2, 0, 1};
+const byte rowPins[] = {7, 5, 3, 2, 0, 1};
 
 // Pins connected to each column of the keyboard (from left to right).
-const byte col_pins[] = {10, 16, 14, 15, 18, 19, 20};
+const byte colPins[] = {10, 16, 14, 15, 18, 19, 20};
 
 // Pins connected to each potentiometer (from left to right).
-const byte pot_pins[] = {4, 6, 8, 9};
+const byte potPins[] = {4, 6, 8, 9};
 
 // The number of keyboard rows.
-#define ROWS sizeof(row_pins)
+#define ROWS sizeof(rowPins)
 
 // The number of keyboard columns.
-#define COLS sizeof(col_pins)
+#define COLS sizeof(colPins)
 
 // The number of potentiometers.
-#define POTS sizeof(pot_pins)
+#define POTS sizeof(potPins)
 
 // The time to validate a steady state of a key, in milliseconds.
 #define BOUNCE_TIME_MS 5
 
 // The number of consecutive milliseconds in the pressed state for each key.
-byte key_pressed_count[ROWS][COLS];
+byte keyPressedTimeMs[ROWS][COLS];
 
 // The number of consecutive milliseconds in the released state for each key.
-byte key_released_count[ROWS][COLS];
+byte keyReleasedTimeMs[ROWS][COLS];
 
 // The pressed state for each key after debouncing.
-bool key_pressed_state[ROWS][COLS];
+bool keyPressed[ROWS][COLS];
 
 // Key press event indicators for each key.
-bool key_pressed_evt[ROWS][COLS];
+bool keyPressedEvt[ROWS][COLS];
 
 // Key release event indicators for each key.
-bool key_released_evt[ROWS][COLS];
+bool keyReleasedEvt[ROWS][COLS];
 
-// The pitch associated with each key.
-const byte key_notes[ROWS][COLS] = {
+// The default pitch associated with each key.
+const byte keyNotes[ROWS][COLS] = {
     pitchC3,  pitchD3,  pitchE3, pitchG3b, pitchA3b, pitchB3b, pitchC4,
     pitchD3b, pitchE3b, pitchF3, pitchG3,  pitchA3,  pitchB3,  pitchD4b,
     pitchC3,  pitchD3,  pitchE3, pitchG3b, pitchA3b, pitchB3b, pitchC4,
@@ -51,66 +52,52 @@ const byte key_notes[ROWS][COLS] = {
 #define CHANNEL 0
 #define VELOCITY 100
 
-void setup() {
-    // Keyboard rows are attached to input pins with pull-ups.
-    for (int r = 0; r < ROWS; r ++) {
-        pinMode(row_pins[r], INPUT_PULLUP);
-    }
-
-    // Keyboard columns are attached to output pins.
-    // We write 1 to each column to disable it.
-    for (int c = 0; c < COLS; c ++) {
-        pinMode(col_pins[c], OUTPUT);
-        digitalWrite(col_pins[c], 1);
-    }
-}
-
 void scan() {
     // All column output pins are supposed to be high before scanning.
     // Scan the keyboard column-wise.
     for (int c = 0; c < COLS; c ++) {
         // Enable the current column.
-        digitalWrite(col_pins[c], 0);
+        digitalWrite(colPins[c], 0);
         
         // Read the current state of each key in the current column.
         for (int r = 0; r < ROWS; r ++) {
-            bool key_on = !digitalRead(row_pins[r]);
+            bool keyStatus = !digitalRead(rowPins[r]);
 
-            // Clear the event indicators for the current key.
-            key_pressed_evt[r][c]  = false;
-            key_released_evt[r][c] = false;
-            
-            if (key_on) {
-                // Count the time in the pressed state. Reset the released state counter.
-                if (key_pressed_count[r][c] < BOUNCE_TIME_MS) {
-                    key_pressed_count[r][c] ++;
-                    key_released_count[r][c] = 0;
-                }
-                
+            if (keyStatus) {
                 // A key-pressed event is valid if the key was released for a sufficient time.
-                if (!key_pressed_state[r][c] && key_released_count[r][c] == BOUNCE_TIME_MS) {
-                    key_pressed_state[r][c] = true;
-                    key_pressed_evt[r][c] = true;
+                if (!keyPressed[r][c] && keyReleasedTimeMs[r][c] == BOUNCE_TIME_MS) {
+                    keyPressed[r][c] = true;
+                    keyPressedEvt[r][c] = true;
+                }
+
+                // Count the time in the pressed state. Reset the released state counter.
+                if (keyPressedTimeMs[r][c] < BOUNCE_TIME_MS) {
+                    keyPressedTimeMs[r][c] ++;
+                    keyReleasedTimeMs[r][c] = 0;
                 }
             }
             else {
-                // Count the time in the released state. Reset the pressed state counter.
-                if (key_released_count[r][c] < BOUNCE_TIME_MS) {
-                    key_released_count[r][c] ++;
-                    key_pressed_count[r][c] = 0;
-                }
-                
                 // A key-released event is valid if the key was pressed for a sufficient time.
-                if (key_pressed_state[r][c] && key_pressed_count[r][c] == BOUNCE_TIME_MS) {
-                    key_pressed_state[r][c] = false;
-                    key_released_evt[r][c] = true;
+                if (keyPressed[r][c] && keyPressedTimeMs[r][c] == BOUNCE_TIME_MS) {
+                    keyPressed[r][c] = false;
+                    keyReleasedEvt[r][c] = true;
+                }
+
+                // Count the time in the released state. Reset the pressed state counter.
+                if (keyReleasedTimeMs[r][c] < BOUNCE_TIME_MS) {
+                    keyReleasedTimeMs[r][c] ++;
+                    keyPressedTimeMs[r][c] = 0;
                 }
             }
         }
         
         // Disable the current column.
-        digitalWrite(col_pins[c], 1);
+        digitalWrite(colPins[c], 1);
     }
+}
+
+static inline bool fnKeyPressed() {
+    return keyPressed[0][0];
 }
 
 static inline void noteOn(byte channel, byte pitch, byte velocity) {
@@ -138,26 +125,61 @@ static inline void pitchBend(byte channel, int bend) {
     MidiUSB.sendMIDI(event);
 }
 
-void midiEvents() {
-    if (!key_pressed_state[0][0]) {
+void processEvents() {
+    bool sendMidi = false;
+    
+    if (!fnKeyPressed()) {
         for (int c = 0; c < COLS; c ++) {
             for (int r = 0; r < ROWS; r ++) {
-                if (key_pressed_evt[r][c]) {
-                    noteOn(CHANNEL, key_notes[r][c], VELOCITY);
+                if (c == 0 && r == 0) {
+                    continue;
                 }
-                else if (key_released_evt[r][c]) {
-                    noteOff(CHANNEL, key_notes[r][c], VELOCITY);
+                
+                if (keyPressedEvt[r][c]) {
+                    keyPressedEvt[r][c] = false;
+                    sendMidi = true;
+                    noteOn(CHANNEL, keyNotes[r][c], VELOCITY);
+                }
+                else if (keyReleasedEvt[r][c]) {
+                    keyReleasedEvt[r][c] = false;
+                    sendMidi = true;
+                    noteOff(CHANNEL, keyNotes[r][c], VELOCITY);
                 }
             }
         }
     }
+    else {
+        // TODO Special functions.
+    }
+    
+    if (sendMidi) {
+        MidiUSB.flush();
+    }
 }
 
-// TODO use library TimerThree to use timer interrupts for scanning.
-// TODO check that scan() runs in less than 1 ms
+void setup() {
+    // Keyboard rows are attached to input pins with pull-ups.
+    for (int r = 0; r < ROWS; r ++) {
+        pinMode(rowPins[r], INPUT_PULLUP);
+    }
+
+    // Keyboard columns are attached to output pins.
+    // We write 1 to each column to disable it.
+    for (int c = 0; c < COLS; c ++) {
+        pinMode(colPins[c], OUTPUT);
+        digitalWrite(colPins[c], 1);
+    }
+
+    // Call the keyboard scan function every millisecond.
+    Timer3.initialize(1000);
+    Timer3.attachInterrupt(scan);
+    
+    Serial.begin(115200);
+}
 
 void loop() {
-    scan();
-    midiEvents();
-    delay(1);
+    processEvents();
+    // TODO potentiometers.
+    // TODO configuration via the serial line.
 }
+
