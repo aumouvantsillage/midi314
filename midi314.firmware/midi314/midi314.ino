@@ -10,7 +10,7 @@ const byte rowPins[] = {7, 5, 3, 2, 0, 1};
 const byte colPins[] = {10, 16, 14, 15, 18, 19, 20};
 
 // Pins connected to each potentiometer (from left to right).
-const byte potPins[] = {4, 6, 8, 9};
+const byte potPins[] = {A9, A8, A7, A6, A3};
 
 // The number of keyboard rows.
 #define ROWS sizeof(rowPins)
@@ -49,8 +49,22 @@ const byte keyNotes[ROWS][COLS] = {
     pitchD4,  pitchE4, pitchG4b, pitchA4b, pitchB4b, pitchC5,  pitchD5
 };
 
+// The step between consecuting potetiometer stops.
+#define POT_STEP 8
+
+// The hysteresis threshold to update the potentiometer value.
+#define POT_MARGIN 2
+
+// The value of each potentiometer, range 0 to 127.
+byte potValues[POTS];
+
+// Potentiometer change events.
+bool potEvt[POTS];
+
 #define CHANNEL 0
-#define VELOCITY 100
+byte velocity;
+
+#define MIDI_CC_CHANNEL_VOLUME   7
 
 void scan() {
     // All column output pins are supposed to be high before scanning.
@@ -94,6 +108,17 @@ void scan() {
         // Disable the current column.
         digitalWrite(colPins[c], 1);
     }
+
+    // Read potentiometer values.
+    for (int p = 0; p < POTS; p ++) {
+        int analogPrev = (int)potValues[p] * POT_STEP;
+        int analog = analogRead(potPins[p]);
+        if (analog > analogPrev + POT_STEP + POT_MARGIN ||
+            analog < analogPrev - POT_MARGIN) {
+            potValues[p] = analog / POT_STEP;
+            potEvt[p] = true;
+        }
+    }
 }
 
 static inline bool fnKeyPressed() {
@@ -127,7 +152,8 @@ static inline void pitchBend(byte channel, int bend) {
 
 void processEvents() {
     bool sendMidi = false;
-    
+
+    // Keyboard events.
     if (!fnKeyPressed()) {
         for (int c = 0; c < COLS; c ++) {
             for (int r = 0; r < ROWS; r ++) {
@@ -138,18 +164,30 @@ void processEvents() {
                 if (keyPressedEvt[r][c]) {
                     keyPressedEvt[r][c] = false;
                     sendMidi = true;
-                    noteOn(CHANNEL, keyNotes[r][c], VELOCITY);
+                    noteOn(CHANNEL, keyNotes[r][c], velocity);
                 }
                 else if (keyReleasedEvt[r][c]) {
                     keyReleasedEvt[r][c] = false;
                     sendMidi = true;
-                    noteOff(CHANNEL, keyNotes[r][c], VELOCITY);
+                    noteOff(CHANNEL, keyNotes[r][c], velocity);
                 }
             }
         }
     }
     else {
         // TODO Special functions.
+    }
+
+    // Potentiometer events.
+    for (int p = 0; p < POTS; p ++) {
+        if (potEvt[p]) {
+            switch (p) {
+                case 0: controlChange(CHANNEL, MIDI_CC_CHANNEL_VOLUME, potValues[0]); sendMidi = true; break;
+                case 1: velocity = potValues[1]; break;
+                case 2: pitchBend(CHANNEL, ((int)potValues[2] - 64) * 128 + 0x2000); sendMidi = true; break;
+            }
+            potEvt[p] = false;
+        }
     }
     
     if (sendMidi) {
@@ -170,7 +208,13 @@ void setup() {
         digitalWrite(colPins[c], 1);
     }
 
-    // Call the keyboard scan function every millisecond.
+    // Read the initial potentiometer values.
+    for (int p = 0; p < POTS; p ++) {
+        potValues[p] = analogRead(potPins[p]) / POT_STEP;
+        potEvt[p] = true;
+    }
+
+    // Call the scan function every millisecond.
     Timer3.initialize(1000);
     Timer3.attachInterrupt(scan);
     
@@ -179,7 +223,6 @@ void setup() {
 
 void loop() {
     processEvents();
-    // TODO potentiometers.
     // TODO configuration via the serial line.
 }
 
