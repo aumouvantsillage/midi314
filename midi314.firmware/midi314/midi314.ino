@@ -49,6 +49,25 @@ const byte keyNotes[ROWS][COLS] = {
     pitchD4,  pitchE4, pitchG4b, pitchA4b, pitchB4b, pitchC5,  pitchD5
 };
 
+// Function ids for keys.
+enum {
+    KEY_NONE,
+    KEY_OCT_UP,
+    KEY_OCT_DN,
+    KEY_SEM_UP,
+    KEY_SEM_DN
+};
+
+// The special functions associated with each key.
+const byte keyFn[ROWS][COLS] = {
+    KEY_NONE,   KEY_OCT_DN, KEY_OCT_UP, KEY_NONE, KEY_NONE, KEY_NONE, KEY_NONE,
+    KEY_SEM_DN, KEY_SEM_UP, KEY_NONE,   KEY_NONE, KEY_NONE, KEY_NONE, KEY_NONE,
+    KEY_NONE,   KEY_NONE,   KEY_NONE,   KEY_NONE, KEY_NONE, KEY_NONE, KEY_NONE,
+    KEY_NONE,   KEY_NONE,   KEY_NONE,   KEY_NONE, KEY_NONE, KEY_NONE, KEY_NONE,
+    KEY_NONE,   KEY_NONE,   KEY_NONE,   KEY_NONE, KEY_NONE, KEY_NONE, KEY_NONE,
+    KEY_NONE,   KEY_NONE,   KEY_NONE,   KEY_NONE, KEY_NONE, KEY_NONE, KEY_NONE,
+};
+
 // The step between consecuting potetiometer stops.
 #define POT_STEP 8
 
@@ -61,10 +80,31 @@ byte potValues[POTS];
 // Potentiometer change events.
 bool potEvt[POTS];
 
-#define CHANNEL 0
+// The current note velocity.
 byte velocity;
 
+// The pitch of the bottom-left key.
+int pitchOffset;
+
+// Indicates that MIDI events are pending.
+bool midiSent;
+
+// MIDI control change event: channel volume.
 #define MIDI_CC_CHANNEL_VOLUME   7
+
+// The MIDI channel to use.
+#define CHANNEL 0
+
+// Function ids for potentiometers.
+enum {
+    POT_NONE,
+    POT_VOLUME,
+    POT_VELOCITY,
+    POT_PITCH_BEND
+};
+
+// The default assignment of potentiometers.
+const byte potFn[] = {POT_VOLUME, POT_VELOCITY, POT_NONE, POT_NONE, POT_PITCH_BEND};
 
 void scan() {
     // All column output pins are supposed to be high before scanning.
@@ -72,7 +112,7 @@ void scan() {
     for (int c = 0; c < COLS; c ++) {
         // Enable the current column.
         digitalWrite(colPins[c], 0);
-        
+
         // Read the current state of each key in the current column.
         for (int r = 0; r < ROWS; r ++) {
             bool keyStatus = !digitalRead(rowPins[r]);
@@ -104,7 +144,7 @@ void scan() {
                 }
             }
         }
-        
+
         // Disable the current column.
         digitalWrite(colPins[c], 1);
     }
@@ -128,31 +168,42 @@ static inline bool fnKeyPressed() {
 static inline void noteOn(byte channel, byte pitch, byte velocity) {
     midiEventPacket_t noteOn = {0x09, 0x90 | channel, pitch, velocity};
     MidiUSB.sendMIDI(noteOn);
+    midiSent = true;
 }
 
 static inline void noteOff(byte channel, byte pitch, byte velocity) {
     midiEventPacket_t noteOff = {0x08, 0x80 | channel, pitch, velocity};
     MidiUSB.sendMIDI(noteOff);
+    midiSent = true;
 }
 
 static inline void controlChange(byte channel, byte control, byte value) {
     midiEventPacket_t event = {0x0B, 0xB0 | channel, control, value};
     MidiUSB.sendMIDI(event);
+    midiSent = true;
 }
 
 static inline void programChange(byte channel, byte value) {
     midiEventPacket_t event = {0x0C, 0xC0 | channel, value, value};
     MidiUSB.sendMIDI(event);
+    midiSent = true;
 }
 
 static inline void pitchBend(byte channel, int bend) {
     midiEventPacket_t event = {0x0E, 0xE0 | channel, bend & 0x7F, bend >> 7};
     MidiUSB.sendMIDI(event);
+    midiSent = true;
+}
+
+static inline int getMinPitch() {
+    return pitchOffset + keyNotes[2][0];
+}
+
+static inline int getMaxPitch() {
+    return pitchOffset + keyNotes[ROWS-2][COLS-1];
 }
 
 void processEvents() {
-    bool sendMidi = false;
-
     // Keyboard events.
     if (!fnKeyPressed()) {
         for (int c = 0; c < COLS; c ++) {
@@ -160,38 +211,68 @@ void processEvents() {
                 if (c == 0 && r == 0) {
                     continue;
                 }
-                
+
                 if (keyPressedEvt[r][c]) {
                     keyPressedEvt[r][c] = false;
-                    sendMidi = true;
-                    noteOn(CHANNEL, keyNotes[r][c], velocity);
+                    noteOn(CHANNEL, pitchOffset + keyNotes[r][c], velocity);
                 }
                 else if (keyReleasedEvt[r][c]) {
                     keyReleasedEvt[r][c] = false;
-                    sendMidi = true;
-                    noteOff(CHANNEL, keyNotes[r][c], velocity);
+                    noteOff(CHANNEL, pitchOffset + keyNotes[r][c], velocity);
                 }
             }
         }
     }
     else {
-        // TODO Special functions.
+        for (int c = 0; c < COLS; c ++) {
+            for (int r = 0; r < ROWS; r ++) {
+                if (keyPressedEvt[r][c]) {
+                    keyPressedEvt[r][c] = false;
+
+                    switch (keyFn[r][c]) {
+                        case KEY_OCT_DN:
+                            if (getMinPitch() >= pitchA0 + 12) {
+                                pitchOffset -= 12;
+                            }
+                            break;
+                        case KEY_OCT_UP:
+                            if (getMaxPitch() <= pitchC8 - 12) {
+                                pitchOffset += 12;
+                            }
+                            break;
+                        case KEY_SEM_DN:
+                            if (getMinPitch() > pitchA0) {
+                                pitchOffset --;
+                            }
+                            break;
+                        case KEY_SEM_UP:
+                            if (getMaxPitch() < pitchC8) {
+                                pitchOffset ++;
+                            }
+                            break;
+                    }
+                }
+                keyReleasedEvt[r][c] = false;
+            }
+        }
     }
 
     // Potentiometer events.
     for (int p = 0; p < POTS; p ++) {
         if (potEvt[p]) {
-            switch (p) {
-                case 0: controlChange(CHANNEL, MIDI_CC_CHANNEL_VOLUME, potValues[0]); sendMidi = true; break;
-                case 1: velocity = potValues[1]; break;
-                case 2: pitchBend(CHANNEL, ((int)potValues[2] - 64) * 128 + 0x2000); sendMidi = true; break;
-            }
             potEvt[p] = false;
+
+            switch (potFn[p]) {
+                case POT_VOLUME:     controlChange(CHANNEL, MIDI_CC_CHANNEL_VOLUME, potValues[p]); break;
+                case POT_VELOCITY:   velocity = potValues[p]; break;
+                case POT_PITCH_BEND: pitchBend(CHANNEL, ((int)potValues[p] - 64) * 128 + 0x2000); break;
+            }
         }
     }
-    
-    if (sendMidi) {
+
+    if (midiSent) {
         MidiUSB.flush();
+        midiSent = false;
     }
 }
 
@@ -217,7 +298,7 @@ void setup() {
     // Call the scan function every millisecond.
     Timer3.initialize(1000);
     Timer3.attachInterrupt(scan);
-    
+
     Serial.begin(115200);
 }
 
@@ -225,4 +306,3 @@ void loop() {
     processEvents();
     // TODO configuration via the serial line.
 }
-
