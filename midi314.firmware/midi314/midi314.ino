@@ -97,7 +97,7 @@ int pitchOffset;
 bool midiSent;
 
 // The MIDI program mapped to key P1.
-byte midiProgramOffset;
+int midiProgramOffset;
 
 // The current MIDI program number.
 byte midiProgram;
@@ -120,9 +120,11 @@ byte loopState[LOOPS];
 
 // MIDI control change events.
 enum {
-    MIDI_CC_CHANNEL_VOLUME = 7,
-    MIDI_CC_CUSTOM_RECORD  = 20,
-    MIDI_CC_CUSTOM_MUTE    = 102,
+    MIDI_CC_CHANNEL_VOLUME      = 7,
+    MIDI_CC_CUSTOM_RECORD_START = 20,
+    MIDI_CC_CUSTOM_RECORD_STOP  = 20,
+    MIDI_CC_CUSTOM_MUTE         = 102,
+    MIDI_CC_CUSTOM_UNMUTE       = 102,
 };
 
 // The MIDI channel of the instrument.
@@ -194,17 +196,11 @@ void scan() {
     }
 }
 
-static inline bool fnKeyPressed() {
-    return keyPressed[0][0];
-}
+#define FN_KEY_PRESSED keyPressed[0][0]
 
-static inline bool fnKeyPressedEvt() {
-    return keyPressedEvt[0][0];
-}
+#define FN_KEY_PRESSED_EVT keyPressedEvt[0][0]
 
-static inline bool delKeyPressed() {
-    return keyPressed[2][0];
-}
+#define DEL_KEY_PRESSED keyPressed[2][0]
 
 static inline void noteOn(byte channel, byte pitch, byte velocity) {
     midiEventPacket_t noteOn = {0x09, 0x90 | channel, pitch, velocity};
@@ -244,34 +240,98 @@ static inline int getMaxPitch() {
     return pitchOffset + keyNotes[ROWS-2][COLS-1];
 }
 
-void processEvents() {
-    // Keyboard events.
-    if (!fnKeyPressed()) {
+void processNoteEvents() {
+    for (int c = 0; c < COLS; c ++) {
+        for (int r = 0; r < ROWS; r ++) {
+            // Ignore the 'Fn' key.
+            if (c == 0 && r == 0) {
+                continue;
+            }
+
+            if (keyPressedEvt[r][c]) {
+                keyPressedEvt[r][c] = false;
+                noteOn(MIDI_CHANNEL, pitchOffset + keyNotes[r][c], velocity);
+            }
+            else if (keyReleasedEvt[r][c]) {
+                keyReleasedEvt[r][c] = false;
+                noteOff(MIDI_CHANNEL, pitchOffset + keyNotes[r][c], velocity);
+            }
+        }
+    }
+}
+
+inline void stopRecording() {
+    loopState[currentLoop] = LOOP_PLAYING;
+    controlChange(MIDI_CHANNEL, MIDI_CC_CUSTOM_RECORD_STOP + currentLoop, 0);
+}
+
+inline void updatePitchOffset(int n) {
+    if (n < 0 && getMinPitch() + n >= pitchA0 || n > 0 && getMaxPitch() + n <= pitchC8) {
+        pitchOffset += n;
+    }
+    // TODO Update UI.
+}
+
+inline void updateMidiProgramOffset(int n) {
+    int nextOffset = midiProgramOffset + n;
+    if (nextOffset < 0) {
+        midiProgramOffset = 120;
+    }
+    else if (nextOffset > 120) {
+        midiProgramOffset = 0;
+    }
+    else {
+        midiProgramOffset = nextOffset;
+    }
+    // TODO Update UI.
+}
+
+inline void updateLoop(int n) {
+    switch (loopState[n]) {
+        case LOOP_EMPTY:
+            if (!DEL_KEY_PRESSED) {
+                loopState[n] = LOOP_RECORDING;
+                currentLoop = n;
+                controlChange(MIDI_CHANNEL, MIDI_CC_CUSTOM_RECORD_START + n, 0);
+            }
+            break;
+        case LOOP_PLAYING:
+            if (DEL_KEY_PRESSED) {
+                loopState[n] = LOOP_EMPTY;
+            }
+            else {
+                loopState[n] = LOOP_MUTED;
+            }
+            controlChange(MIDI_CHANNEL, MIDI_CC_CUSTOM_MUTE + n, 0);
+            break;
+        case LOOP_MUTED:
+            if (DEL_KEY_PRESSED) {
+                loopState[n] = LOOP_EMPTY;
+            }
+            else {
+                loopState[n] = LOOP_PLAYING;
+                controlChange(MIDI_CHANNEL, MIDI_CC_CUSTOM_UNMUTE + n, 0);
+            }
+            break;
+    }
+    // TODO Update UI.
+}
+
+void processFunctionKeys() {
+    if (FN_KEY_PRESSED_EVT) {
+        FN_KEY_PRESSED_EVT = false;
+        if (loopState[currentLoop] == LOOP_RECORDING) {
+            stopRecording();
+        }
+    }
+    else {
         for (int c = 0; c < COLS; c ++) {
             for (int r = 0; r < ROWS; r ++) {
+                // Ignore the 'Fn' key.
                 if (c == 0 && r == 0) {
                     continue;
                 }
 
-                if (keyPressedEvt[r][c]) {
-                    keyPressedEvt[r][c] = false;
-                    noteOn(MIDI_CHANNEL, pitchOffset + keyNotes[r][c], velocity);
-                }
-                else if (keyReleasedEvt[r][c]) {
-                    keyReleasedEvt[r][c] = false;
-                    noteOff(MIDI_CHANNEL, pitchOffset + keyNotes[r][c], velocity);
-                }
-            }
-        }
-    }
-    else {
-        if (fnKeyPressedEvt() && loopState[currentLoop] == LOOP_RECORDING) {
-            controlChange(MIDI_CHANNEL, MIDI_CC_CUSTOM_RECORD + currentLoop, 0);
-            loopState[currentLoop] = LOOP_PLAYING;
-        }
-
-        for (int c = 0; c < COLS; c ++) {
-            for (int r = 0; r < ROWS; r ++) {
                 if (keyPressedEvt[r][c]) {
                     keyPressedEvt[r][c] = false;
 
@@ -280,41 +340,18 @@ void processEvents() {
 
                     switch (fn) {
                         case KEY_OCTAVE:
-                            if (arg == KEY_DOWN && getMinPitch() >= pitchA0 + 12) {
-                                pitchOffset -= 12;
-                            }
-                            else if (arg = KEY_UP && getMaxPitch() <= pitchC8 - 12) {
-                                pitchOffset += 12;
-                            }
-                            // TODO Update UI.
+                            updatePitchOffset(arg == KEY_UP ? 12 : -12);
                             break;
                         case KEY_SEMI:
-                            if (arg == KEY_DOWN && getMinPitch() > pitchA0) {
-                                pitchOffset --;
-                            }
-                            else if (arg = KEY_UP && getMaxPitch() < pitchC8) {
-                                pitchOffset ++;
-                            }
-                            // TODO Update UI.
+                            updatePitchOffset(arg == KEY_UP ? 1 : -1);
                             break;
                         case KEY_PROG:
                             switch (arg) {
                                 case KEY_DOWN:
-                                    if (midiProgramOffset >= 10) {
-                                        midiProgramOffset -= 10;
-                                    }
-                                    else {
-                                        midiProgramOffset = 120;
-                                    }
-                                    // TODO Update UI.
+                                    updateMidiProgramOffset(-10);
                                     break;
                                 case KEY_UP:
-                                    if (midiProgramOffset < 120) {
-                                        midiProgramOffset += 10;
-                                    }
-                                    else {
-                                        midiProgramOffset = 0;
-                                    }
+                                    updateMidiProgramOffset(10);
                                     // TODO Update UI.
                                     break;
                                 default:
@@ -326,41 +363,25 @@ void processEvents() {
                             // TODO Not implemented.
                             break;
                         case KEY_LOOP:
-                            switch (loopState[arg]) {
-                                case LOOP_EMPTY:
-                                    if (!delKeyPressed()) {
-                                        // Start recording the chosen loop.
-                                        controlChange(MIDI_CHANNEL, MIDI_CC_CUSTOM_RECORD + arg, 0);
-                                        currentLoop = arg;
-                                        loopState[arg] = LOOP_RECORDING;
-                                    }
-                                    break;
-                                case LOOP_PLAYING:
-                                    // Mute the chosen loop.
-                                    controlChange(MIDI_CHANNEL, MIDI_CC_CUSTOM_MUTE + arg, 0);
-                                    if (delKeyPressed()) {
-                                        // Delete the chosen loop.
-                                        loopState[arg] = LOOP_EMPTY;
-                                    }
-                                    break;
-                                case LOOP_MUTED:
-                                    if (delKeyPressed()) {
-                                        // Delete the chosen loop.
-                                        loopState[arg] = LOOP_EMPTY;
-                                    }
-                                    else {
-                                        // Play the chosen loop.
-                                        controlChange(MIDI_CHANNEL, MIDI_CC_CUSTOM_MUTE + arg, 0);
-                                        loopState[arg] = LOOP_PLAYING;
-                                    }
-                                    break;
-                            }
+                            updateLoop(arg);
                             break;
                     }
                 }
+
+                // Ignore release events.
                 keyReleasedEvt[r][c] = false;
             }
         }
+    }
+}
+
+void processEvents() {
+    // Keyboard events.
+    if (!FN_KEY_PRESSED) {
+        processNoteEvents();
+    }
+    else {
+        processFunctionKeys();
     }
 
     // Potentiometer events.
