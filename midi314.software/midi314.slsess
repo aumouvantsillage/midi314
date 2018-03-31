@@ -18,7 +18,7 @@
         <Control name="scratch_pos" value="0"/>
         <Control name="delay_trigger" value="0"/>
         <Control name="use_feedback_play" value="0"/>
-        <Control name="quantize" value="0"/>
+        <Control name="quantize" value="1"/>
         <Control name="round" value="0"/>
         <Control name="redo_is_tap" value="0"/>
         <Control name="sync" value="0"/>
@@ -50,10 +50,10 @@
         <Control name="scratch_pos" value="0"/>
         <Control name="delay_trigger" value="0"/>
         <Control name="use_feedback_play" value="0"/>
-        <Control name="quantize" value="0"/>
+        <Control name="quantize" value="1"/>
         <Control name="round" value="0"/>
         <Control name="redo_is_tap" value="0"/>
-        <Control name="sync" value="0"/>
+        <Control name="sync" value="1"/>
         <Control name="use_rate" value="0"/>
         <Control name="fade_samples" value="64"/>
         <Control name="playback_sync" value="0"/>
@@ -82,10 +82,10 @@
         <Control name="scratch_pos" value="0"/>
         <Control name="delay_trigger" value="0"/>
         <Control name="use_feedback_play" value="0"/>
-        <Control name="quantize" value="0"/>
+        <Control name="quantize" value="1"/>
         <Control name="round" value="0"/>
         <Control name="redo_is_tap" value="0"/>
-        <Control name="sync" value="0"/>
+        <Control name="sync" value="1"/>
         <Control name="use_rate" value="0"/>
         <Control name="fade_samples" value="64"/>
         <Control name="playback_sync" value="0"/>
@@ -114,10 +114,10 @@
         <Control name="scratch_pos" value="0"/>
         <Control name="delay_trigger" value="0"/>
         <Control name="use_feedback_play" value="0"/>
-        <Control name="quantize" value="0"/>
+        <Control name="quantize" value="1"/>
         <Control name="round" value="0"/>
         <Control name="redo_is_tap" value="0"/>
-        <Control name="sync" value="0"/>
+        <Control name="sync" value="1"/>
         <Control name="use_rate" value="0"/>
         <Control name="fade_samples" value="64"/>
         <Control name="playback_sync" value="0"/>
@@ -146,10 +146,10 @@
         <Control name="scratch_pos" value="0"/>
         <Control name="delay_trigger" value="0"/>
         <Control name="use_feedback_play" value="0"/>
-        <Control name="quantize" value="0"/>
+        <Control name="quantize" value="1"/>
         <Control name="round" value="0"/>
         <Control name="redo_is_tap" value="0"/>
-        <Control name="sync" value="0"/>
+        <Control name="sync" value="1"/>
         <Control name="use_rate" value="0"/>
         <Control name="fade_samples" value="64"/>
         <Control name="playback_sync" value="0"/>
@@ -178,10 +178,10 @@
         <Control name="scratch_pos" value="0"/>
         <Control name="delay_trigger" value="0"/>
         <Control name="use_feedback_play" value="0"/>
-        <Control name="quantize" value="0"/>
+        <Control name="quantize" value="1"/>
         <Control name="round" value="0"/>
         <Control name="redo_is_tap" value="0"/>
-        <Control name="sync" value="0"/>
+        <Control name="sync" value="1"/>
         <Control name="use_rate" value="0"/>
         <Control name="fade_samples" value="64"/>
         <Control name="playback_sync" value="0"/>
@@ -210,10 +210,10 @@
         <Control name="scratch_pos" value="0"/>
         <Control name="delay_trigger" value="0"/>
         <Control name="use_feedback_play" value="0"/>
-        <Control name="quantize" value="0"/>
+        <Control name="quantize" value="1"/>
         <Control name="round" value="0"/>
         <Control name="redo_is_tap" value="0"/>
-        <Control name="sync" value="0"/>
+        <Control name="sync" value="1"/>
         <Control name="use_rate" value="0"/>
         <Control name="fade_samples" value="64"/>
         <Control name="playback_sync" value="0"/>
@@ -242,10 +242,10 @@
         <Control name="scratch_pos" value="0"/>
         <Control name="delay_trigger" value="0"/>
         <Control name="use_feedback_play" value="0"/>
-        <Control name="quantize" value="0"/>
+        <Control name="quantize" value="1"/>
         <Control name="round" value="0"/>
         <Control name="redo_is_tap" value="0"/>
-        <Control name="sync" value="0"/>
+        <Control name="sync" value="1"/>
         <Control name="use_rate" value="0"/>
         <Control name="fade_samples" value="64"/>
         <Control name="playback_sync" value="0"/>
@@ -274,10 +274,10 @@
         <Control name="scratch_pos" value="0"/>
         <Control name="delay_trigger" value="0"/>
         <Control name="use_feedback_play" value="0"/>
-        <Control name="quantize" value="0"/>
+        <Control name="quantize" value="1"/>
         <Control name="round" value="0"/>
         <Control name="redo_is_tap" value="0"/>
-        <Control name="sync" value="0"/>
+        <Control name="sync" value="1"/>
         <Control name="use_rate" value="0"/>
         <Control name="fade_samples" value="64"/>
         <Control name="playback_sync" value="0"/>
@@ -306,10 +306,10 @@
         <Control name="scratch_pos" value="0"/>
         <Control name="delay_trigger" value="0"/>
         <Control name="use_feedback_play" value="0"/>
-        <Control name="quantize" value="0"/>
+        <Control name="quantize" value="1"/>
         <Control name="round" value="0"/>
         <Control name="redo_is_tap" value="0"/>
-        <Control name="sync" value="0"/>
+        <Control name="sync" value="1"/>
         <Control name="use_rate" value="0"/>
         <Control name="fade_samples" value="64"/>
         <Control name="playback_sync" value="0"/>
