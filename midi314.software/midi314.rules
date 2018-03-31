@@ -1,0 +1,7 @@
+
+(connect "fluidsynth:l_00" "system:playback_1")
+(connect "fluidsynth:r_00" "system:playback_2")
+
+(connect "fluidsynth:l_00" "sooperlooper:common_in_1")
+(connect "fluidsynth:r_00" "sooperlooper:common_in_2")
+(connect "sooperlooper:common_out_(.*)" "system:playback_\1")
