@@ -49,6 +49,9 @@ const byte keyNotes[ROWS][COLS] = {
     pitchD4,  pitchE4, pitchG4b, pitchA4b, pitchB4b, pitchC5,  pitchD5   // Bottom row, right
 };
 
+// Indicates whether a note is playing for each key.
+bool keyNoteOn[ROWS][COLS];
+
 // Function ids for keys.
 enum {
     KEY_NONE   = 0x00,
@@ -121,6 +124,7 @@ byte loopState[LOOPS];
 // MIDI control change events.
 enum {
     MIDI_CC_CHANNEL_VOLUME      = 7,
+    MIDI_CC_PAN             = 10,
     MIDI_CC_CUSTOM_RECORD_START = 20,
     MIDI_CC_CUSTOM_RECORD_STOP  = 20,
     MIDI_CC_CUSTOM_MUTE         = 102,
@@ -135,11 +139,15 @@ enum {
     POT_NONE,
     POT_VOLUME,
     POT_VELOCITY,
-    POT_PITCH_BEND
+    POT_PITCH_BEND,
+    POT_PAN,
+    POT_REVERB,
 };
 
 // The default assignment of potentiometers.
-const byte potFn[] = {POT_VOLUME, POT_VELOCITY, POT_NONE, POT_NONE, POT_PITCH_BEND};
+const byte potFn[] = {POT_VELOCITY, POT_PAN, POT_REVERB, POT_PITCH_BEND, POT_NONE};
+
+bool eventsPending;
 
 void scan() {
     // All column output pins are supposed to be high before scanning.
@@ -194,6 +202,8 @@ void scan() {
             potEvt[p] = true;
         }
     }
+
+    eventsPending = true;
 }
 
 #define FN_KEY_PRESSED keyPressed[0][0]
@@ -243,18 +253,17 @@ static inline int getMaxPitch() {
 void processNoteEvents() {
     for (int c = 0; c < COLS; c ++) {
         for (int r = 0; r < ROWS; r ++) {
-            // Ignore the 'Fn' key.
-            if (c == 0 && r == 0) {
-                continue;
-            }
-
-            if (keyPressedEvt[r][c]) {
+            if (keyPressedEvt[r][c] && !FN_KEY_PRESSED) {
                 keyPressedEvt[r][c] = false;
+                keyNoteOn[r][c] = true;
                 noteOn(MIDI_CHANNEL, pitchOffset + keyNotes[r][c], velocity);
             }
             else if (keyReleasedEvt[r][c]) {
                 keyReleasedEvt[r][c] = false;
-                noteOff(MIDI_CHANNEL, pitchOffset + keyNotes[r][c], velocity);
+                if (keyNoteOn[r][c]) {
+                    keyNoteOn[r][c] = false;
+                    noteOff(MIDI_CHANNEL, pitchOffset + keyNotes[r][c], velocity);
+                }
             }
         }
     }
@@ -318,58 +327,45 @@ inline void updateLoop(int n) {
 }
 
 void processFunctionKeys() {
-    if (FN_KEY_PRESSED_EVT) {
-        FN_KEY_PRESSED_EVT = false;
-        if (loopState[currentLoop] == LOOP_RECORDING) {
-            stopRecording();
-        }
+    if (FN_KEY_PRESSED_EVT && loopState[currentLoop] == LOOP_RECORDING) {
+        stopRecording();
     }
-    else {
-        for (int c = 0; c < COLS; c ++) {
-            for (int r = 0; r < ROWS; r ++) {
-                // Ignore the 'Fn' key.
-                if (c == 0 && r == 0) {
-                    continue;
+
+    for (int c = 0; c < COLS; c ++) {
+        for (int r = 0; r < ROWS; r ++) {
+            if (keyPressedEvt[r][c]) {
+                keyPressedEvt[r][c] = false;
+                byte fn  = keyFn[r][c] & 0xF0;
+                byte arg = keyFn[r][c] & 0x0F;
+
+                switch (fn) {
+                    case KEY_OCTAVE:
+                        updatePitchOffset(arg == KEY_UP ? 12 : -12);
+                        break;
+                    case KEY_SEMI:
+                        updatePitchOffset(arg == KEY_UP ? 1 : -1);
+                        break;
+                    case KEY_PROG:
+                        switch (arg) {
+                            case KEY_DOWN:
+                                updateMidiProgramOffset(-10);
+                                break;
+                            case KEY_UP:
+                                updateMidiProgramOffset(10);
+                                // TODO Update UI.
+                                break;
+                            default:
+                                midiProgram = (midiProgramOffset + arg) % 128;
+                                programChange(MIDI_CHANNEL, midiProgram);
+                        }
+                        break;
+                    case KEY_TEMPO:
+                        // TODO Not implemented.
+                        break;
+                    case KEY_LOOP:
+                        updateLoop(arg);
+                        break;
                 }
-
-                if (keyPressedEvt[r][c]) {
-                    keyPressedEvt[r][c] = false;
-
-                    byte fn  = keyFn[r][c] & 0xF0;
-                    byte arg = keyFn[r][c] & 0x0F;
-
-                    switch (fn) {
-                        case KEY_OCTAVE:
-                            updatePitchOffset(arg == KEY_UP ? 12 : -12);
-                            break;
-                        case KEY_SEMI:
-                            updatePitchOffset(arg == KEY_UP ? 1 : -1);
-                            break;
-                        case KEY_PROG:
-                            switch (arg) {
-                                case KEY_DOWN:
-                                    updateMidiProgramOffset(-10);
-                                    break;
-                                case KEY_UP:
-                                    updateMidiProgramOffset(10);
-                                    // TODO Update UI.
-                                    break;
-                                default:
-                                    midiProgram = (midiProgramOffset + arg) % 128;
-                                    programChange(MIDI_CHANNEL, midiProgram);
-                            }
-                            break;
-                        case KEY_TEMPO:
-                            // TODO Not implemented.
-                            break;
-                        case KEY_LOOP:
-                            updateLoop(arg);
-                            break;
-                    }
-                }
-
-                // Ignore release events.
-                keyReleasedEvt[r][c] = false;
             }
         }
     }
@@ -377,10 +373,8 @@ void processFunctionKeys() {
 
 void processEvents() {
     // Keyboard events.
-    if (!FN_KEY_PRESSED) {
-        processNoteEvents();
-    }
-    else {
+    processNoteEvents();
+    if (FN_KEY_PRESSED) {
         processFunctionKeys();
     }
 
@@ -388,11 +382,11 @@ void processEvents() {
     for (int p = 0; p < POTS; p ++) {
         if (potEvt[p]) {
             potEvt[p] = false;
-
             switch (potFn[p]) {
                 case POT_VOLUME:     controlChange(MIDI_CHANNEL, MIDI_CC_CHANNEL_VOLUME, potValues[p]); break;
-                case POT_VELOCITY:   velocity = potValues[p]; break;
-                case POT_PITCH_BEND: pitchBend(MIDI_CHANNEL, ((int)potValues[p] - 64) * 128 + 0x2000); break;
+                case POT_VELOCITY:   velocity = potValues[p];                                           break;
+                case POT_PITCH_BEND: pitchBend(MIDI_CHANNEL, ((int)potValues[p] - 64) * 128 + 0x2000);  break;
+                case POT_PAN:        controlChange(MIDI_CHANNEL, MIDI_CC_PAN, potValues[p]);            break;
             }
         }
     }
@@ -430,6 +424,9 @@ void setup() {
 }
 
 void loop() {
-    processEvents();
+    if (eventsPending) {
+        eventsPending = false;
+        processEvents();
+    }
     // TODO configuration via the serial line.
 }
