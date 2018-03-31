@@ -1,5 +1,7 @@
 #!/bin/bash
 
+# TODO reset keyboard
+
 INTERFACE=${1:-"cli"}
 
 PIDS=()
@@ -60,5 +62,5 @@ read -rsp $'Press any key to continue...\n' -n1
 
 for p in ${PIDS[@]}; do
     echo "Killing $p"
-    kill $p
+    kill $p || true
 done
