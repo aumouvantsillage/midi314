@@ -397,6 +397,35 @@ void processEvents() {
     }
 }
 
+void reset() {
+    // Clear all keyboard events.
+    for (int c = 0; c < COLS; c ++) {
+        for (int r = 0; r < ROWS; r ++) {
+            keyPressedEvt[r][c] = keyReleasedEvt[r][c] = false;
+        }
+    }
+
+    // Read the initial potentiometer values.
+    for (int p = 0; p < POTS; p ++) {
+        potValues[p] = analogRead(potPins[p]) / POT_STEP;
+        potEvt[p] = true;
+    }
+
+    pitchOffset = 0;
+    midiProgramOffset = 0;
+    midiProgram = 0;
+    currentLoop = 0;
+
+    for (int l = 0; l < LOOPS; l ++) {
+        loopState[l] = LOOP_EMPTY;
+    }
+
+    midiSent = false;
+    eventsPending = true;
+
+    Serial.println("Ready");
+}
+
 void setup() {
     // Keyboard rows are attached to input pins with pull-ups.
     for (int r = 0; r < ROWS; r ++) {
@@ -410,17 +439,13 @@ void setup() {
         digitalWrite(colPins[c], 1);
     }
 
-    // Read the initial potentiometer values.
-    for (int p = 0; p < POTS; p ++) {
-        potValues[p] = analogRead(potPins[p]) / POT_STEP;
-        potEvt[p] = true;
-    }
+    Serial.begin(115200);
+
+    reset();
 
     // Call the scan function every millisecond.
     Timer3.initialize(1000);
     Timer3.attachInterrupt(scan);
-
-    Serial.begin(115200);
 }
 
 void loop() {
@@ -428,5 +453,12 @@ void loop() {
         eventsPending = false;
         processEvents();
     }
-    // TODO configuration via the serial line.
+
+    if (Serial.available() > 0) {
+        // TODO More configurations via the serial line.
+        char c = Serial.read();
+        if (c == 'R') {
+            reset();
+        }
+    }
 }
