@@ -1,41 +1,41 @@
 <!DOCTYPE patchbay>
 <patchbay name="midi314" version="0.4.2">
  <output-sockets>
-  <socket name="fluidsynth/audio out" type="jack-audio" exclusive="off" client="fluidsynth">
+  <socket exclusive="off" name="fluidsynth/audio out" type="jack-audio" client="fluidsynth">
    <plug>l_00</plug>
    <plug>r_00</plug>
   </socket>
-  <socket name="sooperlooper/audio out" type="jack-audio" exclusive="off" client="sooperlooper">
+  <socket exclusive="off" name="sooperlooper/audio out" type="jack-audio" client="sooperlooper">
    <plug>common_out_1</plug>
    <plug>common_out_2</plug>
   </socket>
-  <socket name="Arduino Leonardo/midi out" type="alsa-midi" exclusive="off" client="Arduino Leonardo">
-   <plug>Arduino Leonardo MIDI 1</plug>
+  <socket exclusive="off" name="Arduino Leonardo/midi out" type="jack-midi" client="a2j">
+   <plug>Arduino Leonardo.*</plug>
   </socket>
  </output-sockets>
  <input-sockets>
-  <socket name="system/audio in" type="jack-audio" exclusive="off" client="system">
+  <socket exclusive="off" name="system/audio in" type="jack-audio" client="system">
    <plug>playback_1</plug>
    <plug>playback_2</plug>
   </socket>
-  <socket name="sooperlooper/audio in" type="jack-audio" exclusive="off" client="sooperlooper">
+  <socket exclusive="off" name="sooperlooper/audio in" type="jack-audio" client="sooperlooper">
    <plug>common_in_1</plug>
    <plug>common_in_2</plug>
   </socket>
-  <socket name="sooperlooper/midi in" type="alsa-midi" exclusive="off" client="sooperlooper">
-   <plug>sooperlooper</plug>
+  <socket exclusive="off" name="sooperlooper/midi in" type="jack-midi" client="a2j">
+   <plug>sooperlooper.*</plug>
   </socket>
-  <socket name="fluidsynth/midi in" type="alsa-midi" exclusive="off" client="FLUID Synth \([0-9]+\)">
-   <plug>Synth input port \([0-9]+:0\)</plug>
+  <socket exclusive="off" name="fluidsynth/midi in" type="jack-midi" client="fluidsynth">
+   <plug>midi</plug>
   </socket>
  </input-sockets>
  <slots/>
  <cables>
-  <cable input="system/audio in" type="jack-audio" output="fluidsynth/audio out"/>
-  <cable input="sooperlooper/audio in" type="jack-audio" output="fluidsynth/audio out"/>
-  <cable input="system/audio in" type="jack-audio" output="sooperlooper/audio out"/>
-  <cable input="fluidsynth/midi in" type="alsa-midi" output="Arduino Leonardo/midi out"/>
-  <cable input="sooperlooper/midi in" type="alsa-midi" output="Arduino Leonardo/midi out"/>
+  <cable output="fluidsynth/audio out" type="jack-audio" input="system/audio in"/>
+  <cable output="fluidsynth/audio out" type="jack-audio" input="sooperlooper/audio in"/>
+  <cable output="sooperlooper/audio out" type="jack-audio" input="system/audio in"/>
+  <cable output="Arduino Leonardo/midi out" type="jack-midi" input="fluidsynth/midi in"/>
+  <cable output="Arduino Leonardo/midi out" type="jack-midi" input="sooperlooper/midi in"/>
  </cables>
 </patchbay>
 

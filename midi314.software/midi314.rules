@@ -6,5 +6,5 @@
 (connect "fluidsynth:r_00" "sooperlooper:common_in_2")
 (connect "sooperlooper:common_out_(.*)" "system:playback_\1")
 
-(connect "a2j:Arduino Leonardo.*" "a2j:FLUID Synth.*")
+(connect "a2j:Arduino Leonardo.*" "fluidsynth:midi")
 (connect "a2j:Arduino Leonardo.*" "a2j:sooperlooper.*")

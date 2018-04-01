@@ -10,13 +10,15 @@ if [ $INTERFACE = "gui" ]; then
     qjackctl --start --active-patchbay=midi314.qjackctl & PIDS+=($!)
 else
     jackd -P 70 --realtime -d alsa -d hw:1 & PIDS+=($!)
-    sleep 1
-    a2jmidid -e & PIDS+=($!)
     jack-plumbing midi314.rules & PIDS+=($!)
 fi
 
+sleep 1
+a2jmidid -e & PIDS+=($!)
+
 fluidsynth --server --no-shell --dump \
     --audio-driver=jack \
+    --midi-driver=jack \
     --gain=2 \
     --chorus=no \
     --reverb=no \
