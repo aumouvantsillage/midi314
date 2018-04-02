@@ -1,5 +1,7 @@
 #!/bin/bash
 
+DIR=$(cd $(dirname ${BASH_SOURCE[0]}) && pwd)
+
 # Reset the keyboard.
 echo "R" > /dev/ttyACM0
 
@@ -9,10 +11,10 @@ PIDS=()
 
 # Start Jack and the connection daemons.
 if [ $INTERFACE = "gui" ]; then
-    qjackctl --start --active-patchbay=midi314.qjackctl & PIDS+=($!)
+    qjackctl --start --active-patchbay=$DIR/midi314.qjackctl & PIDS+=($!)
 else
     jackd -P 70 --realtime -d alsa -d hw:1 & PIDS+=($!)
-    jack-plumbing midi314.rules & PIDS+=($!)
+    jack-plumbing $DIR/midi314.rules & PIDS+=($!)
 fi
 
 sleep 1
@@ -34,7 +36,7 @@ else
     LOOPER="sooperlooper"
 fi
 
-$LOOPER --load-session=midi314.slsess --load-midi-binding=midi314.slb & PIDS+=($!)
+$LOOPER --load-session=$DIR/midi314.slsess --load-midi-binding=$DIR/midi314.slb & PIDS+=($!)
 
 # Wait until the user presses a key.
 read -rsp $'Press any key to terminate...\n' -n1
