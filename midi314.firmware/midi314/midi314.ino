@@ -72,10 +72,10 @@ enum {
 const byte keyFn[ROWS][COLS] = {
     KEY_NONE,          KEY_OCTAVE|KEY_DOWN, KEY_OCTAVE|KEY_UP, KEY_TEMPO|KEY_DOWN, KEY_TEMPO|KEY_NONE, KEY_TEMPO|KEY_UP,   KEY_NONE,        // Top row, left
     KEY_SEMI|KEY_DOWN, KEY_SEMI  |KEY_UP,   KEY_PROG  |0,      KEY_PROG |1,        KEY_PROG |2,        KEY_PROG |3,        KEY_PROG|4,      // Middle row, left
-    KEY_LOOP|KEY_DEL,  KEY_LOOP  |KEY_SOLO, KEY_LOOP  |0,      KEY_LOOP |1,        KEY_LOOP |2,        KEY_LOOP |3,        KEY_LOOP|4,      // Bottom row, left
+    KEY_LOOP|KEY_DEL,  KEY_LOOP  |KEY_SOLO, KEY_NONE,          KEY_LOOP |0,        KEY_LOOP |1,        KEY_LOOP |2,        KEY_LOOP|3,      // Bottom row, left
     KEY_NONE,          KEY_NONE,            KEY_NONE,          KEY_NONE,           KEY_NONE,           KEY_NONE,           KEY_NONE,        // Top row, right
     KEY_PROG|5,        KEY_PROG  |6,        KEY_PROG  |7,      KEY_PROG |8,        KEY_PROG |9,        KEY_PROG |KEY_DOWN, KEY_PROG|KEY_UP, // Middle row, right
-    KEY_LOOP|5,        KEY_LOOP  |6,        KEY_LOOP  |7,      KEY_LOOP |8,        KEY_LOOP |9,        KEY_NONE,           KEY_NONE         // Bottom row, right
+    KEY_LOOP|4,        KEY_LOOP  |5,        KEY_LOOP  |6,      KEY_LOOP |7,        KEY_LOOP |8,        KEY_NONE,           KEY_NONE         // Bottom row, right
 };
 
 // The step between consecuting potetiometer stops.
@@ -109,7 +109,7 @@ byte midiProgram;
 byte currentLoop;
 
 // The number of supported loops.
-#define LOOPS 10
+#define LOOPS 9
 
 enum {
     LOOP_EMPTY,

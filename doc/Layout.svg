@@ -26,7 +26,7 @@
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
      inkscape:zoom="1.4"
-     inkscape:cx="478.50003"
+     inkscape:cx="500.22589"
      inkscape:cy="328.46321"
      inkscape:document-units="px"
      inkscape:current-layer="layer1"
@@ -1139,7 +1139,7 @@
            sodipodi:role="line"
            id="tspan3524"
            x="84.856262"
-           y="594.97284">L1</tspan></text>
+           y="594.97284">_</tspan></text>
     </g>
     <g
        transform="translate(148.81891,177.16533)"
@@ -1307,7 +1307,7 @@
            sodipodi:role="line"
            id="tspan3580"
            x="84.856262"
-           y="594.97284">L2</tspan></text>
+           y="594.97284">L1</tspan></text>
     </g>
     <g
        transform="translate(251.57481,244.48818)"
@@ -1331,7 +1331,7 @@
            y="594.97284"
            x="84.856262"
            id="tspan3588"
-           sodipodi:role="line">L3</tspan></text>
+           sodipodi:role="line">L2</tspan></text>
     </g>
     <g
        id="g3590"
@@ -1355,7 +1355,7 @@
            sodipodi:role="line"
            id="tspan3596"
            x="84.856262"
-           y="594.97284">L4</tspan></text>
+           y="594.97284">L3</tspan></text>
     </g>
     <g
        transform="translate(386.22048,244.4882)"
@@ -1379,7 +1379,7 @@
            y="594.97284"
            x="84.856262"
            id="tspan3604"
-           sodipodi:role="line">L5</tspan></text>
+           sodipodi:role="line">L4</tspan></text>
     </g>
     <g
        id="g3606"
@@ -1403,7 +1403,7 @@
            sodipodi:role="line"
            id="tspan3612"
            x="84.856262"
-           y="594.97284">L6</tspan></text>
+           y="594.97284">L5</tspan></text>
     </g>
     <g
        transform="translate(520.86615,244.4882)"
@@ -1427,7 +1427,7 @@
            y="594.97284"
            x="84.856262"
            id="tspan3620"
-           sodipodi:role="line">L7</tspan></text>
+           sodipodi:role="line">L6</tspan></text>
     </g>
     <g
        id="g3622"
@@ -1595,7 +1595,7 @@
            y="594.97284"
            x="84.856262"
            id="tspan3676"
-           sodipodi:role="line">L8</tspan></text>
+           sodipodi:role="line">L7</tspan></text>
     </g>
     <g
        id="g3678"
@@ -1619,7 +1619,7 @@
            sodipodi:role="line"
            id="tspan3684"
            x="84.856262"
-           y="594.97284">L9</tspan></text>
+           y="594.97284">L8</tspan></text>
     </g>
     <g
        transform="translate(722.83465,244.48818)"
@@ -1643,7 +1643,7 @@
            y="594.97284"
            x="84.856262"
            id="tspan3692"
-           sodipodi:role="line">L10</tspan></text>
+           sodipodi:role="line">L9</tspan></text>
     </g>
     <g
        id="g3694"
