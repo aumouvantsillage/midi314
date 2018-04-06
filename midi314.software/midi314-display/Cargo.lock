@@ -116,12 +116,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "midi314"
+version = "0.1.0"
+dependencies = [
+ "num-derive 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "num-traits 0.2.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "rimd 0.0.2 (git+https://github.com/RustAudio/rimd.git)",
+]
+
+[[package]]
 name = "midi314-display"
 version = "0.1.0"
 dependencies = [
  "jack 0.6.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "num-derive 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "num-traits 0.2.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "midi314 0.1.0",
  "rimd 0.0.2 (git+https://github.com/RustAudio/rimd.git)",
 ]
 

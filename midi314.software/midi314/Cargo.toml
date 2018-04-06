@@ -1,9 +1,9 @@
 [package]
-name = "midi314-display"
+name = "midi314"
 version = "0.1.0"
 authors = ["Guillaume Savaton <guillaume@baierouge.fr>"]
 
 [dependencies]
-jack = "0.6"
 rimd = { git = "https://github.com/RustAudio/rimd.git" }
-midi314 = { path = "../midi314" }
+num-traits = "0.2"
+num-derive = "0.2"
