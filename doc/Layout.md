@@ -4,7 +4,7 @@ Potentiometers
 
 | Pot | Function                    |
 |:----|:----------------------------|
-| 1   | Velocity                    |
+| 1   | Channel volume              |
 | 2   | Balance                     |
 | 3   | Reverb                      |
 | 4   | Pitch bend                  |
