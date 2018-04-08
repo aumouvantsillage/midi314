@@ -37,5 +37,5 @@ computer to play music and record loops.
 These programs are written in Rust and use [Jack](http://jackaudio.org/) as
 the audio and MIDI interface.
 
-The [scripts](scripts) folder contains a sample configuration for using the
+The [scripts](software/scripts) folder contains a sample configuration for using the
 midi@3:14 keyboard and software with [fluidsynth](http://www.fluidsynth.org/).
