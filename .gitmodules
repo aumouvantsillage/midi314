@@ -1,6 +1,6 @@
-[submodule "midi314.firmware/libraries/MIDIUSB"]
-	path = midi314.firmware/libraries/MIDIUSB
+[submodule "firmware/libraries/MIDIUSB"]
+	path = firmware/libraries/MIDIUSB
 	url = https://github.com/arduino-libraries/MIDIUSB.git
-[submodule "midi314.firmware/libraries/TimerThree"]
-	path = midi314.firmware/libraries/TimerThree
+[submodule "firmware/libraries/TimerThree"]
+	path = firmware/libraries/TimerThree
 	url = https://github.com/PaulStoffregen/TimerThree.git
