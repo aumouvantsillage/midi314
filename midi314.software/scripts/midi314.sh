@@ -21,7 +21,7 @@ sleep 1
 a2jmidid -e & PIDS+=($!)
 
 # Start the synthesizer.
-fluidsynth --server --no-shell --dump \
+fluidsynth --server --no-shell \
     --audio-driver=jack \
     --midi-driver=jack \
     --gain=2 \
@@ -30,16 +30,10 @@ fluidsynth --server --no-shell --dump \
     /usr/share/sounds/sf2/TimGM6mb.sf2 & PIDS+=($!)
 
 # Start the looper.
-if [ $INTERFACE = "gui" ]; then
-    LOOPER="slgui"
-else
-    LOOPER="sooperlooper"
-fi
+$DIR/../midi314-looper/target/debug/midi314-looper   & PIDS+=($!)
+$DIR/../midi314-display/target/debug/midi314-display & PIDS+=($!)
 
-$LOOPER --load-session=$DIR/midi314.slsess --load-midi-binding=$DIR/midi314.slb & PIDS+=($!)
-
-# Wait until the user presses a key.
-read -rsp $'Press any key to terminate...\n' -n1
+read -rsp $"Press a key to terminate...\n" -n1
 
 # Kill all processes started by this script.
 # This will not kill sooperlooper if it was started by the GUI.

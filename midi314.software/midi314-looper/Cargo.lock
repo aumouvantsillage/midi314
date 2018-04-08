@@ -125,7 +125,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "midi314-display"
+name = "midi314-looper"
 version = "0.1.0"
 dependencies = [
  "jack 0.6.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -167,7 +167,7 @@ dependencies = [
 [[package]]
 name = "rimd"
 version = "0.0.2"
-source = "git+https://github.com/RustAudio/rimd.git#c1d70e56456ca56a68c8149e8aaf8e2f18c868c5"
+source = "git+https://github.com/RustAudio/rimd.git#6e623dbce990605df95635648710d3f0675a615c"
 dependencies = [
  "byteorder 1.2.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "encoding 0.2.33 (registry+https://github.com/rust-lang/crates.io-index)",

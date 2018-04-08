@@ -1,5 +1,5 @@
 [package]
-name = "midi314-display"
+name = "midi314-looper"
 version = "0.1.0"
 authors = ["Guillaume Savaton <guillaume@baierouge.fr>"]
 

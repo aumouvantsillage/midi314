@@ -1,10 +1,8 @@
 
-(connect "fluidsynth:l_00" "system:playback_1")
-(connect "fluidsynth:r_00" "system:playback_2")
-
-(connect "fluidsynth:l_00" "sooperlooper:common_in_1")
-(connect "fluidsynth:r_00" "sooperlooper:common_in_2")
-(connect "sooperlooper:common_out_(.*)" "system:playback_\1")
-
 (connect "a2j:Arduino Leonardo.*" "fluidsynth:midi")
-(connect "a2j:Arduino Leonardo.*" "a2j:sooperlooper.*")
+(connect "a2j:Arduino Leonardo.*" "midi314-looper:midi_in")
+(connect "a2j:Arduino Leonardo.*" "midi314-display:midi_in")
+
+(connect "fluidsynth:l_00" "midi314-looper:audio_in_1")
+(connect "fluidsynth:r_00" "midi314-looper:audio_in_2")
+(connect "midi314-looper:audio_out_(.*)" "system:playback_\1")

@@ -1,21 +1,36 @@
 
 extern crate jack;
-extern crate rimd;
 extern crate midi314;
+
 use std::io;
-use midi314::{State, LoopState};
+use midi314::{Midi314, LoopManager, LoopState};
 
-fn show(state : &State) {
-    let min_note = rimd::note_num_to_name(state.min_pitch);
-    let max_note = rimd::note_num_to_name(state.min_pitch + state.keyboard_width_semi - 1);
+struct Display {
+    loop_states : Vec<LoopState>
+}
 
+impl Display {
+    fn new(n : usize) -> Self {
+        Self {
+            loop_states : vec![LoopState::Empty ; n]
+        }
+    }
+}
+
+impl LoopManager for Display {
+    fn set_loop_state(&mut self, loop_index : usize, state : LoopState) {
+        self.loop_states[loop_index] = state
+    }
+}
+
+fn show(m : &Midi314<Display>) {
     println!("--");
-    println!("Pitch range:     [{} - {}]", min_note, max_note);
-    println!("Program range:   [{} - {}]", state.min_program + 1, state.min_program + state.program_keys);
+    println!("Pitch range:     [{} - {}]", m.get_min_note_name(), m.get_max_note_name());
+    println!("Program range:   [{} - {}]", m.min_program + 1, m.min_program + m.program_keys);
     // TODO map current program to instrument name.
-    println!("Current program: {}", state.current_program + 1);
+    println!("Current program: {}", m.current_program + 1);
     print!("Loops:           ");
-    for l in &state.loop_states {
+    for l in &m.loop_manager.loop_states {
         let c = match *l {
             LoopState::Empty     => '_',
             LoopState::Recording => 'R',
@@ -28,30 +43,26 @@ fn show(state : &State) {
 }
 
 fn main() {
-    println!("Press any key to quit");
-
     // Create a default state and show it.
-    let mut state = State::new();
-    show(&state);
+    let mut m = Midi314::new(Display::new(9));
+    show(&m);
 
     // Open Jack client and register MIDI input port.
     let (client, _status) = jack::Client::new("midi314-display", jack::ClientOptions::NO_START_SERVER).unwrap();
-    let midi_in = client.register_port("in", jack::MidiIn::default()).unwrap();
+    let midi_in = client.register_port("midi_in", jack::MidiIn::default()).unwrap();
 
     // Show MIDI messages.
     let cback = move |_ : &jack::Client, ps : &jack::ProcessScope| -> jack::Control {
         let mut has_event = false;
 
         for e in midi_in.iter(ps) {
-            // Convert the raw MIDI data to a MidiMessage.
-            let m = rimd::MidiMessage::from_bytes(e.bytes.to_vec());
-            if state.update(m) {
+            if m.update(e.bytes.to_vec()) {
                 has_event = true;
             }
         }
 
         if has_event {
-            show(&state);
+            show(&m);
         }
 
         jack::Control::Continue
@@ -60,9 +71,5 @@ fn main() {
     let active_client = client.activate_async((), jack::ClosureProcessHandler::new(cback)).unwrap();
 
     // Wait.
-    let mut user_input = String::new();
-    io::stdin().read_line(&mut user_input).ok();
-
-    // Optional deactivation.
-    active_client.deactivate().unwrap();
+    loop {}
 }
