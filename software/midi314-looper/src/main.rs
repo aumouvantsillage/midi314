@@ -2,6 +2,7 @@
 extern crate jack;
 extern crate midi314;
 
+use std::{thread, time};
 use midi314::{Midi314, LoopManager, LoopState};
 
 #[derive(Clone)]
@@ -224,5 +225,7 @@ fn main() {
     let active_client = client.activate_async((), jack::ClosureProcessHandler::new(cback)).unwrap();
 
     // Wait.
-    loop {}
+    loop {
+        thread::sleep(time::Duration::from_secs(1))
+    }
 }
