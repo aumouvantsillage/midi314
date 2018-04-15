@@ -6,6 +6,7 @@ DIR=$(cd $(dirname ${BASH_SOURCE[0]}) && pwd)
 echo "R" > /dev/ttyACM0
 
 INTERFACE=${1:-"cli"}
+SOUNDFONT=${SOUNDFONT:-/usr/share/sounds/sf2/FluidR3_GM.sf2}
 
 PIDS=()
 
@@ -27,7 +28,7 @@ fluidsynth --server --no-shell \
     --gain=2 \
     --chorus=no \
     --reverb=no \
-    /usr/share/sounds/sf2/TimGM6mb.sf2 & PIDS+=($!)
+    ${SOUNDFONT} & PIDS+=($!)
 
 # Start the looper.
 $DIR/../midi314-looper/target/debug/midi314-looper   & PIDS+=($!)
