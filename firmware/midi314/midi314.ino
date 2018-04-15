@@ -62,20 +62,25 @@ enum {
     KEY_TEMPO  = 0x40,
     KEY_LOOP   = 0x50,
 
+    // Multi-purpose Up/Down key codes, to be combined with
+    // KEY_OCTAVE, KEY_SEMI, KEY_PROG, KEY_TEMPO.
     KEY_DOWN   = 0x0F,
     KEY_UP     = 0x0E,
+
+    // Loop control key codes, to be combined with KEY_LOOP.
     KEY_DEL    = 0x0F,
     KEY_SOLO   = 0x0E,
+    KEY_ALL    = 0x0D
 };
 
 // The special functions associated with each key.
 const byte keyFn[ROWS][COLS] = {
-    KEY_NONE,          KEY_OCTAVE|KEY_DOWN, KEY_OCTAVE|KEY_UP, KEY_TEMPO|KEY_DOWN, KEY_TEMPO|KEY_NONE, KEY_TEMPO|KEY_UP,   KEY_NONE,        // Top row, left
-    KEY_SEMI|KEY_DOWN, KEY_SEMI  |KEY_UP,   KEY_PROG  |0,      KEY_PROG |1,        KEY_PROG |2,        KEY_PROG |3,        KEY_PROG|4,      // Middle row, left
-    KEY_LOOP|KEY_DEL,  KEY_LOOP  |KEY_SOLO, KEY_NONE,          KEY_LOOP |0,        KEY_LOOP |1,        KEY_LOOP |2,        KEY_LOOP|3,      // Bottom row, left
-    KEY_NONE,          KEY_NONE,            KEY_NONE,          KEY_NONE,           KEY_NONE,           KEY_NONE,           KEY_NONE,        // Top row, right
-    KEY_PROG|5,        KEY_PROG  |6,        KEY_PROG  |7,      KEY_PROG |8,        KEY_PROG |9,        KEY_PROG |KEY_DOWN, KEY_PROG|KEY_UP, // Middle row, right
-    KEY_LOOP|4,        KEY_LOOP  |5,        KEY_LOOP  |6,      KEY_LOOP |7,        KEY_LOOP |8,        KEY_NONE,           KEY_NONE         // Bottom row, right
+    KEY_NONE,          KEY_OCTAVE|KEY_DOWN, KEY_OCTAVE|KEY_UP,  KEY_TEMPO|KEY_DOWN, KEY_TEMPO|KEY_NONE, KEY_TEMPO|KEY_UP,   KEY_NONE,        // Top row, left
+    KEY_SEMI|KEY_DOWN, KEY_SEMI  |KEY_UP,   KEY_PROG  |0,       KEY_PROG |1,        KEY_PROG |2,        KEY_PROG |3,        KEY_PROG|4,      // Middle row, left
+    KEY_LOOP|KEY_DEL,  KEY_LOOP  |KEY_SOLO, KEY_LOOP  |KEY_ALL, KEY_LOOP |0,        KEY_LOOP |1,        KEY_LOOP |2,        KEY_LOOP|3,      // Bottom row, left
+    KEY_NONE,          KEY_NONE,            KEY_NONE,           KEY_NONE,           KEY_NONE,           KEY_NONE,           KEY_NONE,        // Top row, right
+    KEY_PROG|5,        KEY_PROG  |6,        KEY_PROG  |7,       KEY_PROG |8,        KEY_PROG |9,        KEY_PROG |KEY_DOWN, KEY_PROG|KEY_UP, // Middle row, right
+    KEY_LOOP|4,        KEY_LOOP  |5,        KEY_LOOP  |6,       KEY_LOOP |7,        KEY_LOOP |8,        KEY_NONE,           KEY_NONE         // Bottom row, right
 };
 
 // The step between consecuting potetiometer stops.
@@ -134,8 +139,9 @@ enum {
     MIDI_CC_CUSTOM_MUTE            = 22,
     MIDI_CC_CUSTOM_DELETE          = 23,
     MIDI_CC_CUSTOM_SOLO            = 24,
-    MIDI_CC_CUSTOM_SET_MIN_PITCH   = 25,
-    MIDI_CC_CUSTOM_SET_MIN_PROGRAM = 26,
+    MIDI_CC_CUSTOM_ALL             = 25,
+    MIDI_CC_CUSTOM_SET_MIN_PITCH   = 26,
+    MIDI_CC_CUSTOM_SET_MIN_PROGRAM = 27,
 };
 
 // The MIDI channel of the instrument.
@@ -218,6 +224,8 @@ void scan() {
 #define FN_KEY_PRESSED_EVT keyPressedEvt[0][0]
 
 #define DEL_KEY_PRESSED keyPressed[2][0]
+
+#define SOLO_KEY_PRESSED keyPressed[2][1]
 
 static inline void noteOn(byte channel, byte pitch, byte velocity) {
     midiEventPacket_t noteOn = {0x09, 0x90 | channel, pitch, velocity};
@@ -302,6 +310,29 @@ inline void updateMidiProgramOffset(int n) {
     controlChange(MIDI_CHANNEL, MIDI_CC_CUSTOM_SET_MIN_PROGRAM, midiProgramOffset);
 }
 
+void playSolo(int n) {
+    if (loopState[n] == LOOP_MUTED) {
+        loopState[n] == LOOP_PLAYING;
+        controlChange(MIDI_CHANNEL, MIDI_CC_CUSTOM_PLAY, n);
+    }
+    for (int i = 0; i < LOOPS; i ++) {
+        if (i != n && loopState[i] == LOOP_PLAYING) {
+            loopState[i] == LOOP_MUTED;
+            controlChange(MIDI_CHANNEL, MIDI_CC_CUSTOM_MUTE, i);
+        }
+    }
+}
+
+void playAllLoops() {
+    // Unmute all muted loops.
+    for (int i = 0; i < LOOPS; i ++) {
+        if (loopState[i] == LOOP_MUTED) {
+            loopState[i] == LOOP_PLAYING;
+            controlChange(MIDI_CHANNEL, MIDI_CC_CUSTOM_PLAY, i);
+        }
+    }
+}
+
 inline void updateLoop(int n) {
     // TODO Solo
     switch (loopState[n]) {
@@ -317,6 +348,9 @@ inline void updateLoop(int n) {
                 loopState[n] = LOOP_EMPTY;
                 controlChange(MIDI_CHANNEL, MIDI_CC_CUSTOM_DELETE, n);
             }
+            else if (SOLO_KEY_PRESSED) {
+                playSolo(n);
+            }
             else {
                 loopState[n] = LOOP_MUTED;
                 controlChange(MIDI_CHANNEL, MIDI_CC_CUSTOM_MUTE, n);
@@ -326,6 +360,9 @@ inline void updateLoop(int n) {
             if (DEL_KEY_PRESSED) {
                 loopState[n] = LOOP_EMPTY;
                 controlChange(MIDI_CHANNEL, MIDI_CC_CUSTOM_DELETE, n);
+            }
+            else if (SOLO_KEY_PRESSED) {
+                playSolo(n);
             }
             else {
                 loopState[n] = LOOP_PLAYING;
@@ -371,7 +408,16 @@ void processFunctionKeys() {
                         // TODO Not implemented.
                         break;
                     case KEY_LOOP:
-                        updateLoop(arg);
+                        switch (arg) {
+                            case KEY_ALL:
+                                playAllLoops();
+                                break;
+                            case KEY_SOLO:
+                            case KEY_DEL:
+                                break;
+                            default:
+                                updateLoop(arg);
+                        }
                         break;
                 }
             }
