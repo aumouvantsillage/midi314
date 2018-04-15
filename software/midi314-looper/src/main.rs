@@ -166,6 +166,10 @@ impl Looper {
 }
 
 impl LoopManager for Looper {
+    fn get_loop_count(&self) -> usize {
+        self.loops.len()
+    }
+
     fn set_loop_state(&mut self, loop_index : usize, state : LoopState) {
         let l = &mut self.loops[loop_index];
         l.state = state;
@@ -175,6 +179,10 @@ impl LoopManager for Looper {
             l.samples_1.copy_from_slice(&zeros);
             l.samples_2.copy_from_slice(&zeros);
         }
+    }
+
+    fn get_loop_state(&self, loop_index : usize) -> LoopState {
+        self.loops[loop_index].state
     }
 }
 

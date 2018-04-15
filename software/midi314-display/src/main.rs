@@ -2,7 +2,6 @@
 extern crate jack;
 extern crate midi314;
 
-use std::io;
 use midi314::{Midi314, LoopManager, LoopState};
 
 struct Display {
@@ -18,8 +17,16 @@ impl Display {
 }
 
 impl LoopManager for Display {
+    fn get_loop_count(&self) -> usize {
+        self.loop_states.len()
+    }
+
     fn set_loop_state(&mut self, loop_index : usize, state : LoopState) {
         self.loop_states[loop_index] = state
+    }
+
+    fn get_loop_state(&self, loop_index : usize) -> LoopState {
+        self.loop_states[loop_index]
     }
 }
 

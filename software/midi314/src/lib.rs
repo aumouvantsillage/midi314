@@ -13,9 +13,12 @@ pub enum LoopState {
 }
 
 pub trait LoopManager {
+    fn get_loop_count(&self) -> usize;
     fn set_loop_state(&mut self, loop_index : usize, state : LoopState);
+    fn get_loop_state(&self, loop_index : usize) -> LoopState;
 }
 
+// Control Change events from 20 to 31 are undefined in the MIDI standard.
 #[derive(PartialEq, Clone, Copy, FromPrimitive)]
 pub enum CustomCC {
     Record        = 20,
@@ -23,8 +26,9 @@ pub enum CustomCC {
     Mute          = 22,
     Delete        = 23,
     Solo          = 24,
-    SetMinPitch   = 25,
-    SetMinProgram = 26
+    All           = 25,
+    SetMinPitch   = 26,
+    SetMinProgram = 27
 }
 
 pub struct Midi314<T : LoopManager> {
@@ -68,9 +72,48 @@ impl<T : LoopManager> Midi314<T> {
         rimd::note_num_to_name(self.min_pitch + self.keyboard_width_semi - 1)
     }
 
-    fn program_change(&mut self, p : u8) -> bool {
-        self.current_program = p as u32;
+    fn program_change(&mut self, program : u8) -> bool {
+        self.current_program = program as u32;
         true
+    }
+
+    fn is_solo(&self, loop_index : usize) -> bool {
+        // If the loop at the given index is not playing, then it is not in "solo" mode.
+        if self.loop_manager.get_loop_state(loop_index) != LoopState::Playing {
+            return false
+        }
+        // If anlther loop is playing, then the loop at the given index is not in "solo" mode.
+        for i in 0..self.loop_manager.get_loop_count() {
+            if i != loop_index && self.loop_manager.get_loop_state(i) == LoopState::Playing {
+                return false
+            }
+        }
+        true
+    }
+
+    fn play_solo(&mut self, loop_index : usize) {
+        // The loop at the given index must be in playing or muted state.
+        let current_state = self.loop_manager.get_loop_state(loop_index);
+        if current_state != LoopState::Playing && current_state != LoopState::Muted {
+            return
+        }
+        // Play the loop at the given index.
+        self.loop_manager.set_loop_state(loop_index, LoopState::Playing);
+        // Mute all other playing loops.
+        for i in 0..self.loop_manager.get_loop_count() {
+            if i != loop_index && self.loop_manager.get_loop_state(i) == LoopState::Playing {
+                self.loop_manager.set_loop_state(i, LoopState::Muted)
+            }
+        }
+    }
+
+    fn play_all(&mut self) {
+        // Play all muted loops.
+        for i in 0..self.loop_manager.get_loop_count() {
+            if self.loop_manager.get_loop_state(i) == LoopState::Muted {
+                self.loop_manager.set_loop_state(i, LoopState::Playing)
+            }
+        }
     }
 
     fn control_change(&mut self, cc : u8, n : u8) -> bool{
@@ -81,7 +124,8 @@ impl<T : LoopManager> Midi314<T> {
             Some(CustomCC::Play)          => self.loop_manager.set_loop_state(index, LoopState::Playing),
             Some(CustomCC::Mute)          => self.loop_manager.set_loop_state(index, LoopState::Muted),
             Some(CustomCC::Delete)        => self.loop_manager.set_loop_state(index, LoopState::Empty),
-            Some(CustomCC::Solo)          => (), // TODO
+            Some(CustomCC::Solo)          => self.play_solo(index),
+            Some(CustomCC::All)           => self.play_all(),
             Some(CustomCC::SetMinPitch)   => self.min_pitch   = n as u32,
             Some(CustomCC::SetMinProgram) => self.min_program = n as u32,
             _                             => result = false
