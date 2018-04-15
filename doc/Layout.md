@@ -36,6 +36,7 @@ When the `Fn` key is pressed, the other keys have special functions:
 | `L#`          | Record, start, mute a loop.                          |
 | `Del` + `L#`  | Delete a loop.                                       |
 | `Solo` + `L#` | Mute all other loops and play the selected one only. |
+| `All`         | Unmute all muted loops.                              |
 
 While recording a loop, pressing `Fn` alone stops the recording and starts the loop.
 
