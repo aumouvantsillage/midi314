@@ -6,7 +6,7 @@ SHARE=$DIR/../share/midi314
 # Reset the keyboard.
 echo "R" > /dev/ttyACM0
 
-INTERFACE=${1:-"cli"}
+INTERFACE=${INTERFACE:-"cli"}
 SOUNDFONT=${SOUNDFONT:-/usr/share/sounds/sf2/FluidR3_GM.sf2}
 DEVICE=${DEVICE:-hw:1}
 
