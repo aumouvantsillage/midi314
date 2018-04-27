@@ -42,6 +42,13 @@ sudo software/scripts/install.sh
 Running
 =======
 
+Execute the `midi314.sh` script from the command line.
+
+```
+midi314.sh
+```
+
+Press a key to stop.
 
 Building and running headless on Raspberry Pi
 =============================================
@@ -77,4 +84,23 @@ cd jack2
 ./waf configure --alsa --prefix=/usr/local --libdir=/usr/lib/arm-linux-gnueabihf
 ./waf
 sudo ./waf install
+```
+
+To run `midi314.sh` automatically when the board boots, do the following:
+
+```
+sudo systemctl edit midi314 --force
+```
+
+Add the following content to the service definition:
+
+```
+
+```
+
+Enable the service:
+
+```
+sudo systemctl enable midi314.service
+sudo reboot
 ```

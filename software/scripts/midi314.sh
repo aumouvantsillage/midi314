@@ -38,7 +38,11 @@ fluidsynth --server --no-shell \
 midi314-looper  & PIDS+=($!)
 midi314-display & PIDS+=($!)
 
-read -rsp $"Press a key to terminate...\n" -n1
+if [ $INTERFACE = "service" ]; then
+    sleep infinity
+else
+    read -rsp $"Press a key to terminate...\n" -n1
+fi
 
 # Kill all processes started by this script.
 # This will not kill sooperlooper if it was started by the GUI.
