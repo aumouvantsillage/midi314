@@ -95,7 +95,20 @@ sudo systemctl edit midi314 --force
 Add the following content to the service definition:
 
 ```
+[Unit]
+Description=midi@3:14
+After=multi-user.target
 
+[Service]
+Type=idle
+Environment="DEVICE=hw:0"
+Environment="INTERFACE=service"
+Environment="PATH=/usr/local/bin:/usr/bin:/bin"
+ExecStart=/usr/bin/midi314.sh
+User=pi
+
+[Install]
+WantedBy=multi-user.target
 ```
 
 Enable the service:

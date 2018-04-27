@@ -39,6 +39,7 @@ midi314-looper  & PIDS+=($!)
 midi314-display & PIDS+=($!)
 
 if [ $INTERFACE = "service" ]; then
+    echo "Running forever"
     sleep infinity
 else
     read -rsp $"Press a key to terminate...\n" -n1
