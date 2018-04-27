@@ -7,6 +7,7 @@ echo "R" > /dev/ttyACM0
 
 INTERFACE=${1:-"cli"}
 SOUNDFONT=${SOUNDFONT:-/usr/share/sounds/sf2/FluidR3_GM.sf2}
+DEVICE=${DEVICE:-hw:1}
 
 PIDS=()
 
@@ -14,7 +15,8 @@ PIDS=()
 if [ $INTERFACE = "gui" ]; then
     qjackctl --start --active-patchbay=$DIR/midi314.qjackctl & PIDS+=($!)
 else
-    jackd -P 70 --realtime -d alsa -d hw:1 & PIDS+=($!)
+    jackd --realtime --realtime-priority 70 \
+        -d alsa --rate 48000 --device $DEVICE & PIDS+=($!)
     jack-plumbing $DIR/midi314.rules & PIDS+=($!)
 fi
 
@@ -25,6 +27,7 @@ a2jmidid -e & PIDS+=($!)
 fluidsynth --server --no-shell \
     --audio-driver=jack \
     --midi-driver=jack \
+    --sample-rate=48000 \
     --gain=2 \
     --chorus=no \
     --reverb=no \

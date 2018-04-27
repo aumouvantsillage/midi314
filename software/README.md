@@ -8,14 +8,41 @@ Dependencies
 * a2jmidid
 * fluidsynth
 
+```
+sudo apt install a2jmidid jack-tools fluidsynth
+```
+
+Building
+========
+
+Install the Rust tool chain:
+
+```
+curl https://sh.rustup.rs -sSf | sh
+source $HOME/.cargo/env
+```
+
+Build applications:
+
+```
+cd software/midi314-display
+cargo build
+
+cd ../midi314-looper
+cargo build
+cd -
+```
+
+Running
+=======
+
+
 Building and running headless on Raspberry Pi
 =============================================
 
 Starting from an official Raspbian Stretch Lite image.
-
-```
-sudo apt install a2jmidid jack-tools fluidsynth
-```
+Install the dependencies and build the applications as explained in
+the previous sections.
 
 Edit `/etc/security/limits.d/audio.conf`:
 
