@@ -46,7 +46,6 @@ else
 fi
 
 # Kill all processes started by this script.
-# This will not kill sooperlooper if it was started by the GUI.
 for p in ${PIDS[@]}; do
     echo "Killing $p"
     kill $p || true
