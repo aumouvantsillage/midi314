@@ -1,6 +1,7 @@
 #!/bin/bash
 
 DIR=$(cd $(dirname ${BASH_SOURCE[0]}) && pwd)
+SHARE=$DIR/../share/midi314
 
 # Reset the keyboard.
 echo "R" > /dev/ttyACM0
@@ -13,11 +14,11 @@ PIDS=()
 
 # Start Jack and the connection daemons.
 if [ $INTERFACE = "gui" ]; then
-    qjackctl --start --active-patchbay=$DIR/midi314.qjackctl & PIDS+=($!)
+    qjackctl --start --active-patchbay=$SHARE/midi314.qjackctl & PIDS+=($!)
 else
     jackd --realtime --realtime-priority 70 \
         -d alsa --rate 48000 --device $DEVICE & PIDS+=($!)
-    jack-plumbing $DIR/midi314.rules & PIDS+=($!)
+    jack-plumbing $SHARE/midi314.rules & PIDS+=($!)
 fi
 
 sleep 1
@@ -34,8 +35,8 @@ fluidsynth --server --no-shell \
     ${SOUNDFONT} & PIDS+=($!)
 
 # Start the looper.
-$DIR/../midi314-looper/target/debug/midi314-looper   & PIDS+=($!)
-$DIR/../midi314-display/target/debug/midi314-display & PIDS+=($!)
+midi314-looper  & PIDS+=($!)
+midi314-display & PIDS+=($!)
 
 read -rsp $"Press a key to terminate...\n" -n1
 

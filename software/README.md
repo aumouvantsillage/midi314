@@ -26,11 +26,17 @@ Build applications:
 
 ```
 cd software/midi314-display
-cargo build
+cargo build --release
 
 cd ../midi314-looper
-cargo build
+cargo build --release
 cd -
+```
+
+Install:
+
+```
+sudo software/scripts/install.sh
 ```
 
 Running

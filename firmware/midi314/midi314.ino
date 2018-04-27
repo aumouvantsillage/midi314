@@ -312,11 +312,11 @@ inline void updateMidiProgramOffset(int n) {
 
 void playSolo(int n) {
     if (loopState[n] == LOOP_MUTED) {
-        loopState[n] == LOOP_PLAYING;
+        loopState[n] = LOOP_PLAYING;
     }
     for (int i = 0; i < LOOPS; i ++) {
         if (i != n && loopState[i] == LOOP_PLAYING) {
-            loopState[i] == LOOP_MUTED;
+            loopState[i] = LOOP_MUTED;
         }
     }
     controlChange(MIDI_CHANNEL, MIDI_CC_CUSTOM_SOLO, n);
@@ -326,14 +326,13 @@ void playAllLoops() {
     // Unmute all muted loops.
     for (int i = 0; i < LOOPS; i ++) {
         if (loopState[i] == LOOP_MUTED) {
-            loopState[i] == LOOP_PLAYING;
+            loopState[i] = LOOP_PLAYING;
         }
     }
     controlChange(MIDI_CHANNEL, MIDI_CC_CUSTOM_ALL, 0);
 }
 
 inline void updateLoop(int n) {
-    // TODO Solo
     switch (loopState[n]) {
         case LOOP_EMPTY:
             if (!DEL_KEY_PRESSED) {
