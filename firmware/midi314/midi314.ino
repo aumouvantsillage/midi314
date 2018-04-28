@@ -49,6 +49,17 @@ const byte keyNotes[ROWS][COLS] = {
     pitchD4,  pitchE4, pitchG4b, pitchA4b, pitchB4b, pitchC5,  pitchD5   // Bottom row, right
 };
 
+// The percussion number associated with each key.
+// Not used: 58, 69, 71, 72, 73, 74, 75
+const byte keyPerc[ROWS][COLS] = {
+    0,  61, 60, 64, 63, 62, 66, // Top row, left
+    42, 44, 46, 49, 51, 52, 55, // Middle row, left
+    35, 36, 38, 40, 37, 41, 43, // Bottom row, left
+    65, 68, 67, 77, 76, 79, 78, // Top row, right
+    57, 59, 54, 53, 56, 80, 81, // Middle row, right
+    45, 47, 48, 50, 69, 70, 39  // Bottom row, right
+};
+
 // Indicates whether a note is playing for each key.
 bool keyNoteOn[ROWS][COLS];
 
@@ -61,6 +72,7 @@ enum {
     KEY_PROG   = 0x30,
     KEY_TEMPO  = 0x40,
     KEY_LOOP   = 0x50,
+    KEY_PERC   = 0x60,
 
     // Multi-purpose Up/Down key codes, to be combined with
     // KEY_OCTAVE, KEY_SEMI, KEY_PROG, KEY_TEMPO.
@@ -78,7 +90,7 @@ const byte keyFn[ROWS][COLS] = {
     KEY_NONE,          KEY_OCTAVE|KEY_DOWN, KEY_OCTAVE|KEY_UP,  KEY_TEMPO|KEY_DOWN, KEY_TEMPO|KEY_NONE, KEY_TEMPO|KEY_UP,   KEY_NONE,        // Top row, left
     KEY_SEMI|KEY_DOWN, KEY_SEMI  |KEY_UP,   KEY_PROG  |0,       KEY_PROG |1,        KEY_PROG |2,        KEY_PROG |3,        KEY_PROG|4,      // Middle row, left
     KEY_LOOP|KEY_DEL,  KEY_LOOP  |KEY_SOLO, KEY_LOOP  |KEY_ALL, KEY_LOOP |0,        KEY_LOOP |1,        KEY_LOOP |2,        KEY_LOOP|3,      // Bottom row, left
-    KEY_NONE,          KEY_NONE,            KEY_NONE,           KEY_NONE,           KEY_NONE,           KEY_NONE,           KEY_NONE,        // Top row, right
+    KEY_NONE,          KEY_NONE,            KEY_NONE,           KEY_NONE,           KEY_NONE,           KEY_NONE,           KEY_PERC,        // Top row, right
     KEY_PROG|5,        KEY_PROG  |6,        KEY_PROG  |7,       KEY_PROG |8,        KEY_PROG |9,        KEY_PROG |KEY_DOWN, KEY_PROG|KEY_UP, // Middle row, right
     KEY_LOOP|4,        KEY_LOOP  |5,        KEY_LOOP  |6,       KEY_LOOP |7,        KEY_LOOP |8,        KEY_NONE,           KEY_NONE         // Bottom row, right
 };
@@ -145,7 +157,13 @@ enum {
 };
 
 // The MIDI channel of the instrument.
-#define MIDI_CHANNEL 0
+#define DEFAULT_MIDI_CHANNEL 0
+
+// The MIDI channel of the percussion instruments (channel 10).
+#define PERC_MIDI_CHANNEL 9
+
+// The current MIDI channel.
+byte midiChannel;
 
 // Function ids for potentiometers.
 enum {
@@ -268,16 +286,20 @@ static inline int getMaxPitch() {
 void processNoteEvents() {
     for (int c = 0; c < COLS; c ++) {
         for (int r = 0; r < ROWS; r ++) {
+            byte note = midiChannel == PERC_MIDI_CHANNEL ?
+                keyPerc[r][c] :
+                pitchOffset + keyNotes[r][c];
+
             if (keyPressedEvt[r][c] && !FN_KEY_PRESSED) {
                 keyPressedEvt[r][c] = false;
                 keyNoteOn[r][c] = true;
-                noteOn(MIDI_CHANNEL, pitchOffset + keyNotes[r][c], VELOCITY);
+                noteOn(midiChannel, note, VELOCITY);
             }
             else if (keyReleasedEvt[r][c]) {
                 keyReleasedEvt[r][c] = false;
                 if (keyNoteOn[r][c]) {
                     keyNoteOn[r][c] = false;
-                    noteOff(MIDI_CHANNEL, pitchOffset + keyNotes[r][c], VELOCITY);
+                    noteOff(midiChannel, note, VELOCITY);
                 }
             }
         }
@@ -286,14 +308,14 @@ void processNoteEvents() {
 
 inline void stopRecording() {
     loopState[currentLoop] = LOOP_PLAYING;
-    controlChange(MIDI_CHANNEL, MIDI_CC_CUSTOM_PLAY, currentLoop);
+    controlChange(midiChannel, MIDI_CC_CUSTOM_PLAY, currentLoop);
 }
 
 inline void updatePitchOffset(int n) {
     if (n < 0 && getMinPitch() + n >= pitchA0 || n > 0 && getMaxPitch() + n <= pitchC8) {
         pitchOffset += n;
     }
-    controlChange(MIDI_CHANNEL, MIDI_CC_CUSTOM_SET_MIN_PITCH, getMinPitch());
+    controlChange(midiChannel, MIDI_CC_CUSTOM_SET_MIN_PITCH, getMinPitch());
 }
 
 inline void updateMidiProgramOffset(int n) {
@@ -307,7 +329,7 @@ inline void updateMidiProgramOffset(int n) {
     else {
         midiProgramOffset = nextOffset;
     }
-    controlChange(MIDI_CHANNEL, MIDI_CC_CUSTOM_SET_MIN_PROGRAM, midiProgramOffset);
+    controlChange(midiChannel, MIDI_CC_CUSTOM_SET_MIN_PROGRAM, midiProgramOffset);
 }
 
 void playSolo(int n) {
@@ -319,7 +341,7 @@ void playSolo(int n) {
             loopState[i] = LOOP_MUTED;
         }
     }
-    controlChange(MIDI_CHANNEL, MIDI_CC_CUSTOM_SOLO, n);
+    controlChange(midiChannel, MIDI_CC_CUSTOM_SOLO, n);
 }
 
 void playAllLoops() {
@@ -329,7 +351,7 @@ void playAllLoops() {
             loopState[i] = LOOP_PLAYING;
         }
     }
-    controlChange(MIDI_CHANNEL, MIDI_CC_CUSTOM_ALL, 0);
+    controlChange(midiChannel, MIDI_CC_CUSTOM_ALL, 0);
 }
 
 inline void updateLoop(int n) {
@@ -338,33 +360,33 @@ inline void updateLoop(int n) {
             if (!DEL_KEY_PRESSED) {
                 loopState[n] = LOOP_RECORDING;
                 currentLoop = n;
-                controlChange(MIDI_CHANNEL, MIDI_CC_CUSTOM_RECORD, n);
+                controlChange(midiChannel, MIDI_CC_CUSTOM_RECORD, n);
             }
             break;
         case LOOP_PLAYING:
             if (DEL_KEY_PRESSED) {
                 loopState[n] = LOOP_EMPTY;
-                controlChange(MIDI_CHANNEL, MIDI_CC_CUSTOM_DELETE, n);
+                controlChange(midiChannel, MIDI_CC_CUSTOM_DELETE, n);
             }
             else if (SOLO_KEY_PRESSED) {
                 playSolo(n);
             }
             else {
                 loopState[n] = LOOP_MUTED;
-                controlChange(MIDI_CHANNEL, MIDI_CC_CUSTOM_MUTE, n);
+                controlChange(midiChannel, MIDI_CC_CUSTOM_MUTE, n);
             }
             break;
         case LOOP_MUTED:
             if (DEL_KEY_PRESSED) {
                 loopState[n] = LOOP_EMPTY;
-                controlChange(MIDI_CHANNEL, MIDI_CC_CUSTOM_DELETE, n);
+                controlChange(midiChannel, MIDI_CC_CUSTOM_DELETE, n);
             }
             else if (SOLO_KEY_PRESSED) {
                 playSolo(n);
             }
             else {
                 loopState[n] = LOOP_PLAYING;
-                controlChange(MIDI_CHANNEL, MIDI_CC_CUSTOM_PLAY, n);
+                controlChange(midiChannel, MIDI_CC_CUSTOM_PLAY, n);
             }
             break;
     }
@@ -389,6 +411,14 @@ void processFunctionKeys() {
                     case KEY_SEMI:
                         updatePitchOffset(arg == KEY_UP ? 1 : -1);
                         break;
+                    case KEY_PERC:
+                        if (midiChannel == DEFAULT_MIDI_CHANNEL) {
+                            midiChannel = PERC_MIDI_CHANNEL;
+                        }
+                        else {
+                            midiChannel = DEFAULT_MIDI_CHANNEL;
+                        }
+                        break;
                     case KEY_PROG:
                         switch (arg) {
                             case KEY_DOWN:
@@ -399,7 +429,7 @@ void processFunctionKeys() {
                                 break;
                             default:
                                 midiProgram = (midiProgramOffset + arg) % 128;
-                                programChange(MIDI_CHANNEL, midiProgram);
+                                programChange(midiChannel, midiProgram);
                         }
                         break;
                     case KEY_TEMPO:
@@ -435,11 +465,11 @@ void processEvents() {
         if (potEvt[p]) {
             potEvt[p] = false;
             switch (potFn[p]) {
-                case POT_VOLUME:     controlChange(MIDI_CHANNEL, MIDI_CC_CHANNEL_VOLUME, potValues[p]); break;
-                case POT_PITCH_BEND: pitchBend(MIDI_CHANNEL, ((int)potValues[p] - 64) * 128 + 0x2000);  break;
-                case POT_PAN:        controlChange(MIDI_CHANNEL, MIDI_CC_PAN, potValues[p]);            break;
-                case POT_REVERB:     controlChange(MIDI_CHANNEL, MIDI_CC_REVERB, potValues[p]);
-                case POT_OTHER:      controlChange(MIDI_CHANNEL, MIDI_CC_OTHER_EFFECT, potValues[p]);
+                case POT_VOLUME:     controlChange(midiChannel, MIDI_CC_CHANNEL_VOLUME, potValues[p]); break;
+                case POT_PITCH_BEND: pitchBend(midiChannel, ((int)potValues[p] - 64) * 128 + 0x2000);  break;
+                case POT_PAN:        controlChange(midiChannel, MIDI_CC_PAN, potValues[p]);            break;
+                case POT_REVERB:     controlChange(midiChannel, MIDI_CC_REVERB, potValues[p]);
+                case POT_OTHER:      controlChange(midiChannel, MIDI_CC_OTHER_EFFECT, potValues[p]);
             }
         }
     }
@@ -465,6 +495,7 @@ void reset() {
     }
 
     pitchOffset = 0;
+    midiChannel = DEFAULT_MIDI_CHANNEL;
     midiProgramOffset = 0;
     midiProgram = 0;
     currentLoop = 0;

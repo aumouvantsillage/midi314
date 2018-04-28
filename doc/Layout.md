@@ -33,6 +33,7 @@ When the `Fn` key is pressed, the other keys have special functions:
 | `P#`          | Instrument selection (MIDI Program Change).          |
 | `P-`          | Previous 10 instruments.                             |
 | `P+`          | Next 10 instruments.                                 |
+| `Per`         | Toggle the percussion (channel 10) instrument mode   |
 | `L#`          | Record, start, mute a loop.                          |
 | `Del` + `L#`  | Delete a loop.                                       |
 | `Solo` + `L#` | Mute all other loops and play the selected one only. |

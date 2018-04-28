@@ -6,6 +6,7 @@ PREFIX=${PREFIX:-/usr}
 BIN=$PREFIX/bin
 SHARE=$PREFIX/share/midi314
 
+mkdir -p $BIN
 cp $DIR/../midi314-display/target/release/midi314-display $BIN
 cp $DIR/../midi314-looper/target/release/midi314-looper   $BIN
 cp $DIR/../scripts/midi314.sh                             $BIN
