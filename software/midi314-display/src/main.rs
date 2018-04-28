@@ -35,8 +35,13 @@ fn show(m : &Midi314<Display>) {
     println!("--");
     println!("Pitch range:     [{} - {}]", m.get_min_note_name(), m.get_max_note_name());
     println!("Program range:   [{} - {}]", m.min_program + 1, m.min_program + m.program_keys);
-    // TODO map current program to instrument name.
-    println!("Current program: {}", m.current_program + 1);
+    if m.percussion {
+        println!("Percussion")
+    }
+    else {
+        // TODO map current program to instrument name.
+        println!("Current program: {}", m.current_program + 1);
+    }
     print!("Loops:           ");
     for l in &m.loop_manager.loop_states {
         let c = match *l {

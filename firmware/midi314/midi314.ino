@@ -154,6 +154,7 @@ enum {
     MIDI_CC_CUSTOM_ALL             = 25,
     MIDI_CC_CUSTOM_SET_MIN_PITCH   = 26,
     MIDI_CC_CUSTOM_SET_MIN_PROGRAM = 27,
+    MIDI_CC_CUSTOM_PERCUSSION      = 28,
 };
 
 // The MIDI channel of the instrument.
@@ -308,14 +309,14 @@ void processNoteEvents() {
 
 inline void stopRecording() {
     loopState[currentLoop] = LOOP_PLAYING;
-    controlChange(midiChannel, MIDI_CC_CUSTOM_PLAY, currentLoop);
+    controlChange(DEFAULT_MIDI_CHANNEL, MIDI_CC_CUSTOM_PLAY, currentLoop);
 }
 
 inline void updatePitchOffset(int n) {
     if (n < 0 && getMinPitch() + n >= pitchA0 || n > 0 && getMaxPitch() + n <= pitchC8) {
         pitchOffset += n;
     }
-    controlChange(midiChannel, MIDI_CC_CUSTOM_SET_MIN_PITCH, getMinPitch());
+    controlChange(DEFAULT_MIDI_CHANNEL, MIDI_CC_CUSTOM_SET_MIN_PITCH, getMinPitch());
 }
 
 inline void updateMidiProgramOffset(int n) {
@@ -329,7 +330,7 @@ inline void updateMidiProgramOffset(int n) {
     else {
         midiProgramOffset = nextOffset;
     }
-    controlChange(midiChannel, MIDI_CC_CUSTOM_SET_MIN_PROGRAM, midiProgramOffset);
+    controlChange(DEFAULT_MIDI_CHANNEL, MIDI_CC_CUSTOM_SET_MIN_PROGRAM, midiProgramOffset);
 }
 
 void playSolo(int n) {
@@ -341,7 +342,7 @@ void playSolo(int n) {
             loopState[i] = LOOP_MUTED;
         }
     }
-    controlChange(midiChannel, MIDI_CC_CUSTOM_SOLO, n);
+    controlChange(DEFAULT_MIDI_CHANNEL, MIDI_CC_CUSTOM_SOLO, n);
 }
 
 void playAllLoops() {
@@ -351,7 +352,7 @@ void playAllLoops() {
             loopState[i] = LOOP_PLAYING;
         }
     }
-    controlChange(midiChannel, MIDI_CC_CUSTOM_ALL, 0);
+    controlChange(DEFAULT_MIDI_CHANNEL, MIDI_CC_CUSTOM_ALL, 0);
 }
 
 inline void updateLoop(int n) {
@@ -360,33 +361,33 @@ inline void updateLoop(int n) {
             if (!DEL_KEY_PRESSED) {
                 loopState[n] = LOOP_RECORDING;
                 currentLoop = n;
-                controlChange(midiChannel, MIDI_CC_CUSTOM_RECORD, n);
+                controlChange(DEFAULT_MIDI_CHANNEL, MIDI_CC_CUSTOM_RECORD, n);
             }
             break;
         case LOOP_PLAYING:
             if (DEL_KEY_PRESSED) {
                 loopState[n] = LOOP_EMPTY;
-                controlChange(midiChannel, MIDI_CC_CUSTOM_DELETE, n);
+                controlChange(DEFAULT_MIDI_CHANNEL, MIDI_CC_CUSTOM_DELETE, n);
             }
             else if (SOLO_KEY_PRESSED) {
                 playSolo(n);
             }
             else {
                 loopState[n] = LOOP_MUTED;
-                controlChange(midiChannel, MIDI_CC_CUSTOM_MUTE, n);
+                controlChange(DEFAULT_MIDI_CHANNEL, MIDI_CC_CUSTOM_MUTE, n);
             }
             break;
         case LOOP_MUTED:
             if (DEL_KEY_PRESSED) {
                 loopState[n] = LOOP_EMPTY;
-                controlChange(midiChannel, MIDI_CC_CUSTOM_DELETE, n);
+                controlChange(DEFAULT_MIDI_CHANNEL, MIDI_CC_CUSTOM_DELETE, n);
             }
             else if (SOLO_KEY_PRESSED) {
                 playSolo(n);
             }
             else {
                 loopState[n] = LOOP_PLAYING;
-                controlChange(midiChannel, MIDI_CC_CUSTOM_PLAY, n);
+                controlChange(DEFAULT_MIDI_CHANNEL, MIDI_CC_CUSTOM_PLAY, n);
             }
             break;
     }
@@ -414,22 +415,26 @@ void processFunctionKeys() {
                     case KEY_PERC:
                         if (midiChannel == DEFAULT_MIDI_CHANNEL) {
                             midiChannel = PERC_MIDI_CHANNEL;
+                            controlChange(DEFAULT_MIDI_CHANNEL, MIDI_CC_CUSTOM_PERCUSSION, 127);
                         }
                         else {
                             midiChannel = DEFAULT_MIDI_CHANNEL;
+                            controlChange(DEFAULT_MIDI_CHANNEL, MIDI_CC_CUSTOM_PERCUSSION, 0);
                         }
                         break;
                     case KEY_PROG:
-                        switch (arg) {
-                            case KEY_DOWN:
-                                updateMidiProgramOffset(-10);
-                                break;
-                            case KEY_UP:
-                                updateMidiProgramOffset(10);
-                                break;
-                            default:
-                                midiProgram = (midiProgramOffset + arg) % 128;
-                                programChange(midiChannel, midiProgram);
+                        if (midiChannel != PERC_MIDI_CHANNEL) {
+                            switch (arg) {
+                                case KEY_DOWN:
+                                    updateMidiProgramOffset(-10);
+                                    break;
+                                case KEY_UP:
+                                    updateMidiProgramOffset(10);
+                                    break;
+                                default:
+                                    midiProgram = (midiProgramOffset + arg) % 128;
+                                    programChange(midiChannel, midiProgram);
+                            }
                         }
                         break;
                     case KEY_TEMPO:

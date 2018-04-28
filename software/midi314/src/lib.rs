@@ -28,7 +28,8 @@ pub enum CustomCC {
     Solo          = 24,
     All           = 25,
     SetMinPitch   = 26,
-    SetMinProgram = 27
+    SetMinProgram = 27,
+    Percussion    = 28
 }
 
 pub struct Midi314<T : LoopManager> {
@@ -37,7 +38,8 @@ pub struct Midi314<T : LoopManager> {
     pub min_program : u32,
     pub current_program : u32,
     pub keyboard_width_semi : u32,
-    pub program_keys : u32
+    pub program_keys : u32,
+    pub percussion : bool
 }
 
 impl<T : LoopManager> Midi314<T> {
@@ -49,7 +51,8 @@ impl<T : LoopManager> Midi314<T> {
             min_program         : 0,
             current_program     : 0,
             keyboard_width_semi : 28,
-            program_keys        : 10
+            program_keys        : 10,
+            percussion          : false
         }
     }
 
@@ -128,6 +131,7 @@ impl<T : LoopManager> Midi314<T> {
             Some(CustomCC::All)           => self.play_all(),
             Some(CustomCC::SetMinPitch)   => self.min_pitch   = n as u32,
             Some(CustomCC::SetMinProgram) => self.min_program = n as u32,
+            Some(CustomCC::Percussion)    => self.percussion = n != 0,
             _                             => result = false
         }
         result
