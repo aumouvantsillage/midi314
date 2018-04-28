@@ -15,13 +15,21 @@ PIDS=()
 # Start Jack and the connection daemons.
 if [ $INTERFACE = "gui" ]; then
     qjackctl --start --active-patchbay=$SHARE/midi314.qjackctl & PIDS+=($!)
+    jack_wait -w
 else
-    jackd --realtime --realtime-priority 70 \
-        -d alsa --rate 48000 --device $DEVICE & PIDS+=($!)
+    (
+        # Repeatedly attempt to start jackd.
+        while true; do
+            jackd --realtime --realtime-priority 70 \
+                -d alsa --playback --rate 48000 --device $DEVICE
+            sleep 1
+        done
+    ) & PIDS+=($!)
+
+    jack_wait -w
     jack-plumbing $SHARE/midi314.rules & PIDS+=($!)
 fi
 
-sleep 1
 a2jmidid -e & PIDS+=($!)
 
 # Start the synthesizer.

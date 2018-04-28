@@ -47,4 +47,3 @@ Not implemented yet
 * Reverb
 * Other effect
 * Tempo
-* Solo
