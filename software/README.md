@@ -57,6 +57,9 @@ Starting from an official Raspbian Stretch Lite image.
 Install the dependencies and build the applications as explained in
 the previous sections.
 
+Low-latency configuration
+-------------------------
+
 Edit `/etc/security/limits.d/audio.conf`:
 
 ```
@@ -72,6 +75,9 @@ Reduce the swap usage:
 sudo /sbin/sysctl -w vm.swappiness=10
 ```
 
+Headless Jackd
+--------------
+
 Install Jackd without the dbus dependency:
 [Running Jackd headless](https://capocasa.net/jackd-headless)
 
@@ -85,6 +91,28 @@ cd jack2
 ./waf
 sudo ./waf install
 ```
+
+Display
+-------
+
+Install the Adafruit library for the Nokia 5510:
+
+```
+sudo apt install python-pip python-imaging
+sudo pip install RPi.GPIO
+git clone https://github.com/adafruit/Adafruit_Nokia_LCD.git
+cd Adafruit_Nokia_LCD
+sudo python setup.py install
+```
+
+In `/boot/config.txt`, uncomment the line:
+
+```
+dtparam=spi=on
+```
+
+Run on boot
+-----------
 
 To run `midi314.sh` automatically when the board boots, do the following:
 
