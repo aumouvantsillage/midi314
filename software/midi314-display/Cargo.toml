@@ -6,3 +6,4 @@ authors = ["Guillaume Savaton <guillaume@baierouge.fr>"]
 [dependencies]
 jack = "0.6"
 midi314 = { path = "../midi314" }
+pcd8544 = { path = "../pcd8544" }

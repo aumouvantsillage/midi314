@@ -1,9 +1,15 @@
 
 extern crate jack;
 extern crate midi314;
+extern crate pcd8544;
 
 use std::{thread, time};
 use midi314::{Midi314, LoopManager, LoopState};
+use pcd8544::{PCD8544};
+
+const LCD_RST : u64 = 24;
+const LCD_DC  : u64 = 25;
+const LCD_SPI : &'static str = "/dev/spidev0.0";
 
 struct Display {
     loop_states : Vec<LoopState>
@@ -56,6 +62,12 @@ fn show(m : &Midi314<Display>) {
 }
 
 fn main() {
+    let lcd = PCD8544::new(LCD_DC, LCD_RST, LCD_SPI);
+    match lcd {
+        Ok(mut l) => l.display(),
+        _     => ()
+    }
+
     // Create a default state and show it.
     let mut m = Midi314::new(Display::new(9));
     show(&m);
