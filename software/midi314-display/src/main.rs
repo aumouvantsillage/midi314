@@ -64,8 +64,8 @@ fn show(m : &Midi314<Display>) {
 fn main() {
     let lcd = PCD8544::new(LCD_DC, LCD_RST, LCD_SPI);
     match lcd {
-        Ok(mut l) => l.display(),
-        _     => ()
+        Ok(mut l) => l.display().unwrap(),
+        _         => println!("No LCD display detected")
     }
 
     // Create a default state and show it.

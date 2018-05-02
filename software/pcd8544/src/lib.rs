@@ -4,7 +4,7 @@ extern crate spidev;
 
 use sysfs_gpio::{Direction, Pin};
 use spidev::{Spidev, SpidevOptions, SPI_MODE_0};
-use std::io::{Result, Write};
+use std::io::Write;
 use std::thread::sleep;
 use std::time::Duration;
 
@@ -39,20 +39,38 @@ pub struct PCD8544 {
     buffer : [u8 ; LCDWIDTH * LCDHEIGHT / 8]
 }
 
+#[derive(Debug)]
+pub enum Error {
+    PinError(sysfs_gpio::Error),
+    SpiDevError(std::io::Error)
+}
+
+impl From<sysfs_gpio::Error> for Error {
+    fn from(e : sysfs_gpio::Error) -> Error {
+        Error::PinError(e)
+    }
+}
+
+impl From<std::io::Error> for Error {
+    fn from(e : std::io::Error) -> Error {
+        Error::SpiDevError(e)
+    }
+}
+
 impl PCD8544 {
-    pub fn new(dc : u64, rst : u64, spi : &str) -> Result<Self> {
+    pub fn new(dc : u64, rst : u64, spi : &str) -> Result<Self, Error> {
         let dc_pin = Pin::new(dc);
-        dc_pin.export();
-        dc_pin.set_direction(Direction::Out);
+        dc_pin.export()?;
+        dc_pin.set_direction(Direction::Out)?;
 
         let rst_pin = Pin::new(rst);
-        rst_pin.export();
-        rst_pin.set_direction(Direction::Out);
+        rst_pin.export()?;
+        rst_pin.set_direction(Direction::Out)?;
 
         let mut spidev = Spidev::open(spi)?;
         let mut options = SpidevOptions::new();
         options.bits_per_word(8).max_speed_hz(4_000_000).mode(SPI_MODE_0);
-        spidev.configure(&options);
+        spidev.configure(&options)?;
 
         let mut res = Self {
             dc : dc_pin,
@@ -63,58 +81,65 @@ impl PCD8544 {
             ] // [0x00 ; LCDWIDTH * LCDHEIGHT / 8]
         };
 
-        res.reset();
-        res.set_contrast(DEFAULT_CONTRAST);
-        res.set_bias(DEFAULT_BIAS);
+        res.reset()?;
+        res.set_contrast(DEFAULT_CONTRAST)?;
+        res.set_bias(DEFAULT_BIAS)?;
 
         Ok(res)
     }
 
-    pub fn reset(&mut self) {
-        self.rst.set_value(0);
+    pub fn reset(&mut self) -> Result<(), Error> {
+        self.rst.set_value(0)?;
         sleep(Duration::from_millis(100));
-        self.rst.set_value(1);
+        self.rst.set_value(1)?;
+        Ok(())
     }
 
-    pub fn command(&mut self, c : u8) {
-        self.dc.set_value(0);
-        self.spi.write(&[c]);
+    pub fn command(&mut self, c : u8) -> Result<(), Error> {
+        self.dc.set_value(0)?;
+        self.spi.write(&[c])?;
+        Ok(())
     }
 
-    pub fn extended_command(&mut self, c : u8) {
+    pub fn extended_command(&mut self, c : u8) -> Result<(), Error> {
         // Set extended command mode
-        self.command(PCD8544_FUNCTIONSET | PCD8544_EXTENDEDINSTRUCTION);
-        self.command(c);
+        self.command(PCD8544_FUNCTIONSET | PCD8544_EXTENDEDINSTRUCTION)?;
+        self.command(c)?;
         // Set normal display mode.
-        self.command(PCD8544_FUNCTIONSET);
-        self.command(PCD8544_DISPLAYCONTROL | PCD8544_DISPLAYNORMAL);
+        self.command(PCD8544_FUNCTIONSET)?;
+        self.command(PCD8544_DISPLAYCONTROL | PCD8544_DISPLAYNORMAL)?;
+        Ok(())
     }
 
-    pub fn data(&mut self, c : u8) {
-        self.dc.set_value(1);
-        self.spi.write(&[c]);
+    pub fn data(&mut self, c : u8) -> Result<(), Error> {
+        self.dc.set_value(1)?;
+        self.spi.write(&[c])?;
+        Ok(())
     }
 
-    pub fn set_contrast(&mut self, contrast : u8) {
+    pub fn set_contrast(&mut self, contrast : u8) -> Result<(), Error> {
         let mut c = contrast;
         if c > 127 {
             c = 127;
         }
-        self.extended_command(PCD8544_SETVOP | c);
+        self.extended_command(PCD8544_SETVOP | c)?;
+        Ok(())
     }
 
-    pub fn set_bias(&mut self, bias : u8) {
-        self.extended_command(PCD8544_SETBIAS | bias);
+    pub fn set_bias(&mut self, bias : u8) -> Result<(), Error> {
+        self.extended_command(PCD8544_SETBIAS | bias)?;
+        Ok(())
     }
 
-    pub fn display(&mut self) {
+    pub fn display(&mut self) -> Result<(), Error> {
         // TODO: Consider support for partial updates like Arduino library.
         // Reset to position zero.
-        self.command(PCD8544_SETYADDR);
-        self.command(PCD8544_SETXADDR);
+        self.command(PCD8544_SETYADDR)?;
+        self.command(PCD8544_SETXADDR)?;
         // Write the buffer.
-        self.dc.set_value(1);
-        self.spi.write(&self.buffer);
+        self.dc.set_value(1)?;
+        self.spi.write(&self.buffer)?;
+        Ok(())
     }
 }
 /*
