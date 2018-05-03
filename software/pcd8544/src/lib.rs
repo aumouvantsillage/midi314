@@ -77,7 +77,7 @@ fn new_pin(n : u64, dir : Direction, timeout : Duration, retries : u32) -> Resul
             sleep(timeout);
         }
         match pin.set_direction(dir) {
-            Ok(_)  => break,
+            Ok(_)  => return Ok(pin),
             Err(e) => res = Err(Error::from(e))
         }
     }
