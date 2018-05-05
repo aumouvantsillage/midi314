@@ -77,6 +77,7 @@ pub struct Keyboard {
     pub current_program : u32,
     pub width_semitones : u32,
     pub program_keys : u32,
+    pub tempo : u32,
     pub percussion : bool
 }
 
@@ -89,6 +90,7 @@ impl Keyboard {
             current_program : 0,
             width_semitones : 28,
             program_keys    : 10,
+            tempo           : 90,
             percussion      : false
         }
     }

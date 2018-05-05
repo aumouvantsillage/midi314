@@ -47,7 +47,8 @@ pub struct PCD8544 {
     rst : Pin,
     spi : Spidev,
     buffer : [u8 ; BUFFER_LEN],
-    rotation : Rotation
+    rotation : Rotation,
+    pub char_spacing : usize
 }
 
 #[derive(Debug)]
@@ -109,7 +110,8 @@ impl PCD8544 {
             rst : new_pin(rst, Direction::Out, Duration::from_millis(100), 3)?,
             spi : spidev,
             buffer : [0x00 ; BUFFER_LEN],
-            rotation : rot
+            rotation : rot,
+            char_spacing : 0
         };
 
         res.reset()?;
@@ -207,7 +209,7 @@ impl PCD8544 {
         };
 
         // Convert character coordinates to pixels.
-        let xp = x * terminus6x12::WIDTH;
+        let xp = x * (terminus6x12::WIDTH + self.char_spacing);
         let yp = y * terminus6x12::HEIGHT;
 
         for r in 0..terminus6x12::HEIGHT {
@@ -226,7 +228,7 @@ impl PCD8544 {
         for c in s.chars() {
             self.print_char(xc, yc, c);
             xc += 1;
-            if xc * terminus6x12::WIDTH >= LCDWIDTH {
+            if xc * (terminus6x12::WIDTH + self.char_spacing) >= LCDWIDTH {
                 xc = 0;
                 yc += 1;
                 if yc * terminus6x12::HEIGHT >= LCDHEIGHT {
@@ -236,27 +238,3 @@ impl PCD8544 {
         }
     }
 }
-/*
-
-    def image(self, image):
-        """Set buffer to value of Python Imaging Library image.  The image should
-        be in 1 bit mode and have a size of 84x48 pixels."""
-        if image.mode != '1':
-            raise ValueError('Image must be in mode 1.')
-        index = 0
-        // Iterate through the 6 y axis rows.
-        // Grab all the pixels from the image, faster than getpixel.
-        pix = image.load()
-        for row in range(6):
-            // Iterate through all 83 x axis columns.
-            for x in range(84):
-                // Set the bits for the column of pixels at the current position.
-                bits = 0
-                // Don't use range here as it's a bit slow
-                for bit in [0, 1, 2, 3, 4, 5, 6, 7]:
-                    bits = bits << 1
-                    bits |= 1 if pix[(x, row*ROWPIXELS+7-bit)] == 0 else 0
-                // Update buffer byte and increment to next byte.
-                self._buffer[index] = bits
-                index += 1
-*/
