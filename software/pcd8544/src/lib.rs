@@ -218,7 +218,7 @@ impl PCD8544 {
             let b = terminus6x12::BITMAP[r];
             let mut m = 0x80;
             for k in 0..7 {
-                self.set_pixel(xp + k, yp + r, b & m != 0x00);
+                self.set_pixel(xp + k, yp + r, (b & m) != 0x00);
                 m >>= 1;
             }
         }

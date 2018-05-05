@@ -29,6 +29,7 @@ impl Display {
         if self.lcd.is_some() {
             let lcd = self.lcd.as_mut().unwrap();
             lcd.print(2, 1, "midi@3:14");
+            lcd.update();
         }
 
         println!("--");
