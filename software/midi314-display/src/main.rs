@@ -32,7 +32,7 @@ impl Display {
             lcd.char_spacing = 0;
             lcd.print(0, 0, &format!("K    {:>3} - {:<3}", kb.get_min_note_name(), kb.get_max_note_name()));
             if kb.percussion {
-                lcd.print(0, 1, "P Per")
+                lcd.print(0, 1, "Pper")
             }
             else {
                 // TODO map current program to instrument name.
