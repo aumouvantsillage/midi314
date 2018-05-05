@@ -4,22 +4,58 @@ extern crate midi314;
 extern crate pcd8544;
 
 use std::{thread, time};
-use midi314::{Midi314, LoopManager, LoopState};
-use pcd8544::{PCD8544};
+use midi314::{Keyboard, LoopManager, LoopState};
+use pcd8544::{PCD8544, Rotation};
 
 const LCD_RST : u64 = 24;
 const LCD_DC  : u64 = 25;
 const LCD_SPI : &'static str = "/dev/spidev0.0";
+const LCD_ROT : Rotation = Rotation::None;
 
 struct Display {
-    loop_states : Vec<LoopState>
+    loop_states : Vec<LoopState>,
+    lcd : Option<PCD8544>
 }
 
 impl Display {
     fn new(n : usize) -> Self {
         Self {
-            loop_states : vec![LoopState::Empty ; n]
+            loop_states : vec![LoopState::Empty ; n],
+            lcd : PCD8544::new(LCD_DC, LCD_RST, LCD_SPI, LCD_ROT).ok()
         }
+    }
+
+    fn show(&mut self, kb : &Keyboard) {
+        if self.lcd.is_some() {
+            let lcd = self.lcd.as_mut().unwrap();
+            for x in 0..12 {
+                for y in 0..6 {
+                    lcd.set_pixel(x * 7, y * 8, true);
+                }
+            }
+        }
+
+        println!("--");
+        println!("Pitch range:     [{} - {}]", kb.get_min_note_name(), kb.get_max_note_name());
+        println!("Program range:   [{} - {}]", kb.min_program + 1, kb.min_program + kb.program_keys);
+        if kb.percussion {
+            println!("Percussion")
+        }
+        else {
+            // TODO map current program to instrument name.
+            println!("Current program: {}", kb.current_program + 1);
+        }
+        print!("Loops:           ");
+        for l in &self.loop_states {
+            let c = match *l {
+                LoopState::Empty     => '_',
+                LoopState::Recording => 'R',
+                LoopState::Playing   => '>',
+                LoopState::Muted     => 'M'
+            };
+            print!("{}", c);
+        }
+        println!();
     }
 }
 
@@ -37,40 +73,11 @@ impl LoopManager for Display {
     }
 }
 
-fn show(m : &Midi314<Display>) {
-    println!("--");
-    println!("Pitch range:     [{} - {}]", m.get_min_note_name(), m.get_max_note_name());
-    println!("Program range:   [{} - {}]", m.min_program + 1, m.min_program + m.program_keys);
-    if m.percussion {
-        println!("Percussion")
-    }
-    else {
-        // TODO map current program to instrument name.
-        println!("Current program: {}", m.current_program + 1);
-    }
-    print!("Loops:           ");
-    for l in &m.loop_manager.loop_states {
-        let c = match *l {
-            LoopState::Empty     => '_',
-            LoopState::Recording => 'R',
-            LoopState::Playing   => '>',
-            LoopState::Muted     => 'M'
-        };
-        print!("{}", c);
-    }
-    println!();
-}
-
 fn main() {
-    let lcd = PCD8544::new(LCD_DC, LCD_RST, LCD_SPI);
-    match lcd {
-        Ok(mut l) => l.display().unwrap(),
-        _         => println!("No LCD display detected")
-    }
-
     // Create a default state and show it.
-    let mut m = Midi314::new(Display::new(9));
-    show(&m);
+    let mut display = Display::new(9);
+    let mut keyboard = Keyboard::new();
+    display.show(&keyboard);
 
     // Open Jack client and register MIDI input port.
     let (client, _status) = jack::Client::new("midi314-display", jack::ClientOptions::NO_START_SERVER).unwrap();
@@ -81,13 +88,13 @@ fn main() {
         let mut has_event = false;
 
         for e in midi_in.iter(ps) {
-            if m.update(e.bytes.to_vec()) {
+            if keyboard.update(&mut display, e.bytes.to_vec()) {
                 has_event = true;
             }
         }
 
         if has_event {
-            show(&m);
+            display.show(&keyboard);
         }
 
         jack::Control::Continue

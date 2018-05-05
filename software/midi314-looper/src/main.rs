@@ -3,7 +3,7 @@ extern crate jack;
 extern crate midi314;
 
 use std::{thread, time};
-use midi314::{Midi314, LoopManager, LoopState};
+use midi314::{Keyboard, LoopManager, LoopState};
 
 #[derive(Clone)]
 struct Loop {
@@ -190,7 +190,8 @@ impl LoopManager for Looper {
 fn main() {
     // Create a default state and show it.
     // TODO Take args from config file.
-    let mut m = Midi314::new(Looper::new(9, 48000 * 60, 1.0e-4));
+    let mut looper = Looper::new(9, 48000 * 60, 1.0e-4);
+    let mut keyboard = Keyboard::new();
 
     // Open Jack client and register a MIDI input port and audio I/O ports.
     let (client, _status) = jack::Client::new("midi314-looper", jack::ClientOptions::NO_START_SERVER).unwrap();
@@ -204,7 +205,7 @@ fn main() {
     let cback = move |_ : &jack::Client, ps : &jack::ProcessScope| -> jack::Control {
         // Process MIDI events and update the current state.
         for e in midi_in.iter(ps) {
-            m.update(e.bytes.to_vec());
+            keyboard.update(&mut looper, e.bytes.to_vec());
         }
 
         // Get the current audio buffers.
@@ -214,10 +215,10 @@ fn main() {
         let mut out_2 = audio_out_2.as_mut_slice(ps);
 
         // Update the looper state.
-        m.loop_manager.update_state(&in_1, &in_2);
+        looper.update_state(&in_1, &in_2);
 
         // Process the audio data.
-        m.loop_manager.run(&in_1, &in_2, &mut out_1, &mut out_2);
+        looper.run(&in_1, &in_2, &mut out_1, &mut out_2);
 
         jack::Control::Continue
     };
