@@ -28,11 +28,7 @@ impl Display {
     fn show(&mut self, kb : &Keyboard) {
         if self.lcd.is_some() {
             let lcd = self.lcd.as_mut().unwrap();
-            for x in 0..12 {
-                for y in 0..6 {
-                    lcd.set_pixel(x * 7, y * 8, true);
-                }
-            }
+            lcd.print(2, 1, "midi@3:14");
         }
 
         println!("--");

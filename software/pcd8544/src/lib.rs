@@ -2,6 +2,9 @@
 extern crate sysfs_gpio;
 extern crate spidev;
 
+mod font;
+mod terminus6x12;
+
 use sysfs_gpio::{Direction, Pin};
 use spidev::{Spidev, SpidevOptions, SPI_MODE_0};
 use std::io::Write;
@@ -193,6 +196,47 @@ impl PCD8544 {
         }
         else {
             self.buffer[x + (y / 8) * LCDWIDTH] &= !bv;
+        }
+    }
+
+    pub fn print_char(&mut self, x : usize, y : usize, c : char) {
+        // Get the index of the current character in the font.
+        let index = match terminus6x12::ENCODING.iter().position(|&v| v == c as u16) {
+            Some(k) => k,
+            None    => 0xFFFD
+        };
+
+        // Compute the index range in the font bitmap array.
+        let start = index * terminus6x12::HEIGHT;
+        let end   = start + terminus6x12::HEIGHT - 1;
+
+        // Convert character coordinates to pixels.
+        let xp = x * terminus6x12::WIDTH;
+        let yp = y * terminus6x12::HEIGHT;
+
+        for r in start..end {
+            let b = terminus6x12::BITMAP[r];
+            let mut m = 0x80;
+            for k in 0..7 {
+                self.set_pixel(xp + k, yp + r, b & m != 0x00);
+                m >>= 1;
+            }
+        }
+    }
+
+    pub fn print(&mut self, x : usize, y : usize, s : &str) {
+        let mut xc = x;
+        let mut yc = y;
+        for c in s.chars() {
+            self.print_char(xc, yc, c);
+            xc += 1;
+            if xc * terminus6x12::WIDTH >= LCDWIDTH {
+                xc = 0;
+                yc += 1;
+                if yc * terminus6x12::HEIGHT >= LCDHEIGHT {
+                    break;
+                }
+            }
         }
     }
 }
