@@ -28,10 +28,11 @@ impl Display {
     fn show(&mut self, kb : &Keyboard) {
         if self.lcd.is_some() {
             let lcd = self.lcd.as_mut().unwrap();
+            lcd.clear();
             lcd.print(0, 0, &format!("Keys {} - {}", kb.get_min_note_name(), kb.get_max_note_name()));
             lcd.print(0, 1, &format!("Prog {} - {}", kb.min_program + 1, kb.min_program + kb.program_keys));
             if kb.percussion {
-                lcd.print(0, 2, "Curr [Percussion]")
+                lcd.print(0, 2, "Curr Perc")
             }
             else {
                 // TODO map current program to instrument name.
