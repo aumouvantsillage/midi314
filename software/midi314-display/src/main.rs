@@ -28,7 +28,24 @@ impl Display {
     fn show(&mut self, kb : &Keyboard) {
         if self.lcd.is_some() {
             let lcd = self.lcd.as_mut().unwrap();
-            lcd.print(2, 1, "midi@3:14");
+            lcd.print(0, 0, &format!("Keys {} - {}", kb.get_min_note_name(), kb.get_max_note_name()));
+            lcd.print(0, 1, &format!("Prog {} - {}", kb.min_program + 1, kb.min_program + kb.program_keys));
+            if kb.percussion {
+                lcd.print(0, 2, "Curr [Percussion]")
+            }
+            else {
+                // TODO map current program to instrument name.
+                lcd.print(0, 2, &format!("Curr {}", kb.current_program + 1))
+            }
+            lcd.print(0, 3, "Loop");
+            for (i, l) in (&self.loop_states).iter().enumerate() {
+                lcd.print_char(5 + i, 3, match *l {
+                    LoopState::Empty     => '\u{2014}', // Em dash
+                    LoopState::Recording => '\u{25cf}', // Black circle
+                    LoopState::Playing   => '\u{25b6}', // Black right-pointing triangle
+                    LoopState::Muted     => '\u{23f8}'  // Double vertical bar
+                });
+            }
             lcd.update();
         }
 

@@ -5,7 +5,7 @@ pub const WIDTH : usize = 6;
 
 pub const HEIGHT : usize = 12;
 
-pub const CHARS : usize = 891;
+pub const CHARS : usize = 892;
 
 pub static BITMAP : [u8 ; CHARS * HEIGHT] = [
 //   0 $00 'char0'
@@ -12482,6 +12482,20 @@ pub static BITMAP : [u8 ; CHARS * HEIGHT] = [
 	XXXXX___,
 	________,
 	________,
+// 9208 $23f8 'uni23F8'
+//	width 6, bbx 0, bby -2, bbw 6, bbh 12
+	________,
+	________,
+	________,
+	XX__XX__,
+	XX__XX__,
+	XX__XX__,
+	XX__XX__,
+	XX__XX__,
+	XX__XX__,
+	________,
+	________,
+	________,
 ];
 
 pub static ENCODING : [u16 ; CHARS] = [
@@ -13376,4 +13390,5 @@ pub static ENCODING : [u16 ; CHARS] = [
     57523,
     63166,
     65533,
+	9208,
 ];
