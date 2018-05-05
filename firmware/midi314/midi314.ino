@@ -393,6 +393,14 @@ inline void updateLoop(int n) {
     }
 }
 
+void forcePotEvents() {
+    for (int p = 0; p < POTS; p ++) {
+        potEvt[p] = true;
+    }
+
+    eventsPending = true;
+}
+
 void processFunctionKeys() {
     if (FN_KEY_PRESSED_EVT && loopState[currentLoop] == LOOP_RECORDING) {
         stopRecording();
@@ -421,6 +429,7 @@ void processFunctionKeys() {
                             midiChannel = DEFAULT_MIDI_CHANNEL;
                             controlChange(DEFAULT_MIDI_CHANNEL, MIDI_CC_CUSTOM_PERCUSSION, 0);
                         }
+                        forcePotEvents();
                         break;
                     case KEY_PROG:
                         if (midiChannel != PERC_MIDI_CHANNEL) {
