@@ -206,18 +206,14 @@ impl PCD8544 {
             None    => 0xFFFD
         };
 
-        // Compute the index range in the font bitmap array.
-        let start = index * terminus6x12::HEIGHT;
-        let end   = start + terminus6x12::HEIGHT - 1;
-
         // Convert character coordinates to pixels.
         let xp = x * terminus6x12::WIDTH;
         let yp = y * terminus6x12::HEIGHT;
 
-        for r in start..end {
-            let b = terminus6x12::BITMAP[r];
+        for r in 0..terminus6x12::HEIGHT {
+            let b = terminus6x12::BITMAP[r + index * terminus6x12::HEIGHT];
             let mut m = 0x80;
-            for k in 0..7 {
+            for k in 0..8 {
                 self.set_pixel(xp + k, yp + r, (b & m) != 0x00);
                 m >>= 1;
             }
