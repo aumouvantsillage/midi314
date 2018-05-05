@@ -30,16 +30,17 @@ impl Display {
             let lcd = self.lcd.as_mut().unwrap();
             lcd.clear();
             lcd.char_spacing = 0;
-            lcd.print(0, 0, &format!("K {:>3}-{:>3}", kb.get_min_note_name(), kb.get_max_note_name()));
-            lcd.print(0, 1, &format!("P {:>3}-{:>3} =", kb.min_program + 1, kb.min_program + kb.program_keys));
+            lcd.print(0, 0, &format!("K    {:>3} - {:<3}", kb.get_min_note_name(), kb.get_max_note_name()));
             if kb.percussion {
-                lcd.print(11, 1, "Per")
+                lcd.print(0, 1, "P Per")
             }
             else {
                 // TODO map current program to instrument name.
-                lcd.print(11, 1, &format!("{:>3}", kb.current_program + 1))
+                lcd.print(0, 1, &format!("P{:<3}", kb.current_program + 1))
             }
-            lcd.print(0, 2, &format!("T {:>3}", kb.tempo));
+            lcd.print(5, 1, &format!("{:>3} - {:<3}", kb.min_program + 1, kb.min_program + kb.program_keys));
+            lcd.print(0, 2, &format!("T    {:>3}", kb.tempo));
+            lcd.char_spacing = 2;
             lcd.print(0, 3, "L");
             for (i, l) in (&self.loop_states).iter().enumerate() {
                 lcd.print_char(2 + i, 3, match *l {
@@ -48,7 +49,6 @@ impl Display {
                     LoopState::Playing   => '\u{25b6}', // Black right-pointing triangle
                     LoopState::Muted     => '\u{23f8}'  // Double vertical bar
                 });
-                lcd.char_spacing = 2;
             }
             lcd.update();
         }
