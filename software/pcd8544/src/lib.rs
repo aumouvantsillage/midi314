@@ -192,10 +192,10 @@ impl PCD8544 {
         let bv : u8 = 1 << (y % 8);
 
         if value {
-            self.buffer[x + (y / 8) * LCDWIDTH] |= bv;
+            self.buffer[px + (py / 8) * LCDWIDTH] |= bv;
         }
         else {
-            self.buffer[x + (y / 8) * LCDWIDTH] &= !bv;
+            self.buffer[px + (py / 8) * LCDWIDTH] &= !bv;
         }
     }
 

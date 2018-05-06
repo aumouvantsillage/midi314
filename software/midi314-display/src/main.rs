@@ -10,7 +10,7 @@ use pcd8544::{PCD8544, Orientation};
 const LCD_RST    : u64 = 24;
 const LCD_DC     : u64 = 25;
 const LCD_SPI    : &'static str = "/dev/spidev0.0";
-const LCD_ORIENT : Orientation = Orientation::Landscape(false);
+const LCD_ORIENT : Orientation = Orientation::Portrait(false);
 
 struct Display {
     loop_states : Vec<LoopState>,
