@@ -76,7 +76,7 @@ impl Display {
                         }
                         else {
                             (i - 1, 6)
-                        }
+                        };
                         lcd.print_char(x, y, match *l {
                             LoopState::Empty     => '\u{2014}', // Em dash
                             LoopState::Recording => '\u{25cf}', // Black circle
