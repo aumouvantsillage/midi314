@@ -56,7 +56,7 @@ impl Display {
 
                 Orientation::Portrait(_) => {
                     lcd.print(0, 0, "Keys");
-                    lcd.print(0, 1, &format!("{:>3}-{:<3}", kb.get_min_note_name(), kb.get_max_note_name()));
+                    lcd.print(1, 1, &format!("{:>3}-{:<3}", kb.get_min_note_name(), kb.get_max_note_name()));
                     if kb.percussion {
                         lcd.print(0, 2, "Prog per")
                     }
@@ -64,7 +64,7 @@ impl Display {
                         // TODO map current program to instrument name.
                         lcd.print(0, 2, &format!("Prog {:<3}", kb.current_program + 1))
                     }
-                    lcd.print(0, 3, &format!("{:>3}-{:<3}", kb.min_program + 1, kb.min_program + kb.program_keys));
+                    lcd.print(1, 3, &format!("{:>3}-{:<3}", kb.min_program + 1, kb.min_program + kb.program_keys));
                     lcd.print(0, 4, &format!("Tmpo {:>3}", kb.tempo));
                     lcd.char_spacing = 2;
                     for (i, l) in (&self.loop_states).iter().enumerate() {

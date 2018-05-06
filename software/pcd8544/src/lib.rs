@@ -189,7 +189,7 @@ impl PCD8544 {
             return
         }
 
-        let bv : u8 = 1 << (y % 8);
+        let bv : u8 = 1 << (py % 8);
 
         if value {
             self.buffer[px + (py / 8) * LCDWIDTH] |= bv;
