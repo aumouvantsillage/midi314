@@ -39,3 +39,17 @@ the audio and MIDI interface.
 
 The [scripts](software/scripts) folder contains a sample configuration for using the
 midi@3:14 keyboard and software with [fluidsynth](http://www.fluidsynth.org/).
+
+TODO
+====
+
+* Add metronome.
+* Use metronome as a reference for the looper.
+* Overdub in looper.
+* Add effects.
+* Record loop to a file.
+* Try alternative synthesizers.
+* Find a solution for safe power-off.
+* Fix unresponsive keyboard for several seconds on boot.
+* Fix sporadic delayed response to key presses.
+* Check issue with volume after recording several loops.

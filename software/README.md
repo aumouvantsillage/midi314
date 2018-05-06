@@ -92,18 +92,8 @@ cd jack2
 sudo ./waf install
 ```
 
-Display
--------
-
-Install the Adafruit library for the Nokia 5510:
-
-```
-sudo apt install python-pip python-imaging
-sudo pip install RPi.GPIO
-git clone https://github.com/adafruit/Adafruit_Nokia_LCD.git
-cd Adafruit_Nokia_LCD
-sudo python setup.py install
-```
+LCD Display
+-----------
 
 In `/boot/config.txt`, uncomment the line:
 
