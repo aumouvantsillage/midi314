@@ -66,9 +66,9 @@ impl Display {
                     }
                     lcd.print(0, 3, &format!("{:>3}-{:<3}", kb.min_program + 1, kb.min_program + kb.program_keys));
                     lcd.print(0, 4, &format!("Tmpo {:>3}", kb.tempo));
-                    lcd.char_spacing = 15;
+                    lcd.char_spacing = 2;
                     for (i, l) in (&self.loop_states).iter().enumerate() {
-                        lcd.print_char(i % 3, 5 + i / 3, match *l {
+                        lcd.print_char(i % 5, 5 + i / 5, match *l {
                             LoopState::Empty     => '\u{2014}', // Em dash
                             LoopState::Recording => '\u{25cf}', // Black circle
                             LoopState::Playing   => '\u{25b6}', // Black right-pointing triangle
