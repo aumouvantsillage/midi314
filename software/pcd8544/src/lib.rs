@@ -35,11 +35,9 @@ const PCD8544_SETTEMP             : u8 = 0x04;
 const PCD8544_SETBIAS             : u8 = 0x10;
 const PCD8544_SETVOP              : u8 = 0x80;
 
-pub enum Rotation {
-    None,
-    Left,
-    Right,
-    UpsideDown
+pub enum Orientation {
+    Portrait(bool),
+    Landscape(bool)
 }
 
 pub struct PCD8544 {
@@ -47,7 +45,7 @@ pub struct PCD8544 {
     rst : Pin,
     spi : Spidev,
     buffer : [u8 ; BUFFER_LEN],
-    rotation : Rotation,
+    pub orient : Orientation,
     pub char_spacing : usize
 }
 
@@ -99,7 +97,7 @@ fn new_pin(n : u64, dir : Direction, timeout : Duration, retries : u32) -> Resul
 }
 
 impl PCD8544 {
-    pub fn new(dc : u64, rst : u64, spi : &str, rot : Rotation) -> Result<Self> {
+    pub fn new(dc : u64, rst : u64, spi : &str, orient : Orientation) -> Result<Self> {
         let mut spidev = Spidev::open(spi)?;
         let mut options = SpidevOptions::new();
         options.bits_per_word(8).max_speed_hz(4_000_000).mode(SPI_MODE_0);
@@ -110,7 +108,7 @@ impl PCD8544 {
             rst : new_pin(rst, Direction::Out, Duration::from_millis(100), 3)?,
             spi : spidev,
             buffer : [0x00 ; BUFFER_LEN],
-            rotation : rot,
+            orient : orient,
             char_spacing : 0
         };
 
@@ -180,11 +178,11 @@ impl PCD8544 {
     }
 
     pub fn set_pixel(&mut self, x : usize, y : usize, value : bool) {
-        let (px, py) = match self.rotation {
-            Rotation::None       => (x, y),
-            Rotation::Left       => (LCDWIDTH - 1 - y, x),
-            Rotation::Right      => (y, LCDHEIGHT - 1 - x),
-            Rotation::UpsideDown => (LCDWIDTH - 1 - x, LCDHEIGHT - 1 - y)
+        let (px, py) = match self.orient {
+            Orientation::Landscape(false) => (x, y),
+            Orientation::Portrait(false)  => (LCDWIDTH - 1 - y, x),
+            Orientation::Landscape(true)  => (y, LCDHEIGHT - 1 - x),
+            Orientation::Portrait(true)   => (LCDWIDTH - 1 - x, LCDHEIGHT - 1 - y)
         };
 
         if px >= LCDWIDTH || py >= LCDHEIGHT {

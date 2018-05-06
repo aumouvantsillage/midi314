@@ -5,12 +5,12 @@ extern crate pcd8544;
 
 use std::{thread, time};
 use midi314::{Keyboard, LoopManager, LoopState};
-use pcd8544::{PCD8544, Rotation};
+use pcd8544::{PCD8544, Orientation};
 
-const LCD_RST : u64 = 24;
-const LCD_DC  : u64 = 25;
-const LCD_SPI : &'static str = "/dev/spidev0.0";
-const LCD_ROT : Rotation = Rotation::None;
+const LCD_RST    : u64 = 24;
+const LCD_DC     : u64 = 25;
+const LCD_SPI    : &'static str = "/dev/spidev0.0";
+const LCD_ORIENT : Orientation = Orientation::Landscape(false);
 
 struct Display {
     loop_states : Vec<LoopState>,
@@ -21,7 +21,7 @@ impl Display {
     fn new(n : usize) -> Self {
         Self {
             loop_states : vec![LoopState::Empty ; n],
-            lcd : PCD8544::new(LCD_DC, LCD_RST, LCD_SPI, LCD_ROT).ok()
+            lcd : PCD8544::new(LCD_DC, LCD_RST, LCD_SPI, LCD_ORIENT).ok()
         }
     }
 
@@ -30,24 +30,52 @@ impl Display {
             let lcd = self.lcd.as_mut().unwrap();
             lcd.clear();
             lcd.char_spacing = 0;
-            lcd.print(0, 0, &format!("K    {:>3} - {:<3}", kb.get_min_note_name(), kb.get_max_note_name()));
-            if kb.percussion {
-                lcd.print(0, 1, "Pper")
-            }
-            else {
-                // TODO map current program to instrument name.
-                lcd.print(0, 1, &format!("P{:<3}", kb.current_program + 1))
-            }
-            lcd.print(5, 1, &format!("{:>3} - {:<3}", kb.min_program + 1, kb.min_program + kb.program_keys));
-            lcd.print(0, 2, &format!("T    {:>3}", kb.tempo));
-            lcd.char_spacing = 3;
-            for (i, l) in (&self.loop_states).iter().enumerate() {
-                lcd.print_char(i, 3, match *l {
-                    LoopState::Empty     => '\u{2014}', // Em dash
-                    LoopState::Recording => '\u{25cf}', // Black circle
-                    LoopState::Playing   => '\u{25b6}', // Black right-pointing triangle
-                    LoopState::Muted     => '\u{23f8}'  // Double vertical bar
-                });
+
+            match lcd.orient {
+                Orientation::Landscape(_) => {
+                    lcd.print(0, 0, &format!("K    {:>3} - {:<3}", kb.get_min_note_name(), kb.get_max_note_name()));
+                    if kb.percussion {
+                        lcd.print(0, 1, "Pper")
+                    }
+                    else {
+                        // TODO map current program to instrument name.
+                        lcd.print(0, 1, &format!("P{:<3}", kb.current_program + 1))
+                    }
+                    lcd.print(5, 1, &format!("{:>3} - {:<3}", kb.min_program + 1, kb.min_program + kb.program_keys));
+                    lcd.print(0, 2, &format!("T    {:>3}", kb.tempo));
+                    lcd.char_spacing = 3;
+                    for (i, l) in (&self.loop_states).iter().enumerate() {
+                        lcd.print_char(i, 3, match *l {
+                            LoopState::Empty     => '\u{2014}', // Em dash
+                            LoopState::Recording => '\u{25cf}', // Black circle
+                            LoopState::Playing   => '\u{25b6}', // Black right-pointing triangle
+                            LoopState::Muted     => '\u{23f8}'  // Double vertical bar
+                        });
+                    }
+                },
+
+                Orientation::Portrait(_) => {
+                    lcd.print(0, 0, "Keys");
+                    lcd.print(0, 1, &format!("{:>3}-{:<3}", kb.get_min_note_name(), kb.get_max_note_name()));
+                    if kb.percussion {
+                        lcd.print(0, 2, "Prog per")
+                    }
+                    else {
+                        // TODO map current program to instrument name.
+                        lcd.print(0, 2, &format!("Prog {:<3}", kb.current_program + 1))
+                    }
+                    lcd.print(0, 3, &format!("{:>3}-{:<3}", kb.min_program + 1, kb.min_program + kb.program_keys));
+                    lcd.print(0, 4, &format!("Tmpo {:>3}", kb.tempo));
+                    lcd.char_spacing = 15;
+                    for (i, l) in (&self.loop_states).iter().enumerate() {
+                        lcd.print_char(i % 3, 5 + i / 3, match *l {
+                            LoopState::Empty     => '\u{2014}', // Em dash
+                            LoopState::Recording => '\u{25cf}', // Black circle
+                            LoopState::Playing   => '\u{25b6}', // Black right-pointing triangle
+                            LoopState::Muted     => '\u{23f8}'  // Double vertical bar
+                        });
+                    }
+                }
             }
             lcd.update();
         }
