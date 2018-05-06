@@ -74,7 +74,7 @@ impl Display {
                     lcd.print(0, 6, &format!("{:<3}\u{2502}", kb.min_program + kb.program_keys));
 
                     for (i, l) in (&self.loop_states).iter().enumerate() {
-                        lcd.print_char(4 + i % 3, 4 + i / 3, match *l {
+                        lcd.print_char(5 + i % 3, 4 + i / 3, match *l {
                             LoopState::Empty     => '\u{2014}', // Em dash
                             LoopState::Recording => '\u{25cf}', // Black circle
                             LoopState::Playing   => '\u{25b6}', // Black right-pointing triangle
