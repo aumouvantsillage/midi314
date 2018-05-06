@@ -46,7 +46,8 @@ pub struct PCD8544 {
     spi : Spidev,
     buffer : [u8 ; BUFFER_LEN],
     pub orient : Orientation,
-    pub char_spacing : usize
+    pub char_spacing : usize,
+    pub inverse : bool
 }
 
 #[derive(Debug)]
@@ -109,7 +110,8 @@ impl PCD8544 {
             spi : spidev,
             buffer : [0x00 ; BUFFER_LEN],
             orient : orient,
-            char_spacing : 0
+            char_spacing : 0,
+            inverse : false
         };
 
         res.reset()?;
@@ -191,7 +193,7 @@ impl PCD8544 {
 
         let bv : u8 = 1 << (py % 8);
 
-        if value {
+        if value != self.inverse {
             self.buffer[px + (py / 8) * LCDWIDTH] |= bv;
         }
         else {

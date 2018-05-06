@@ -55,24 +55,24 @@ impl Display {
                 },
 
                 Orientation::Portrait(_) => {
-                    lcd.print(0, 0, "Key\u{2502}");
-                    lcd.print(0, 1, &format!("{:<3}\u{2502}", kb.get_min_note_name()));
+                    lcd.inverse = true;
+                    lcd.print(0, 0, "Key\u{2502}Tmpo");
+                    lcd.print(0, 3, "Prg\u{2502}Loop");
+
+                    lcd.inverse = false;
+                    lcd.print(0, 1, &format!("{:<3}\u{2502} {:>3}", kb.get_min_note_name(), kb.tempo));
                     lcd.print(0, 2, &format!("{:<3}\u{2502}", kb.get_max_note_name()));
 
                     if kb.percussion {
-                        lcd.print(4, 0, "Pper")
+                        lcd.print(0, 4, "per\u{2502}")
                     }
                     else {
                         // TODO map current program to instrument name.
-                        lcd.print(4, 0, &format!("P{:<3}", kb.current_program + 1))
+                        lcd.print(0, 4, &format!("{:<3}\u{2502}", kb.current_program + 1))
                     }
-                    lcd.print(4, 1, &format!("{:>3}", kb.min_program + 1));
-                    lcd.print(4, 2, &format!("{:>3}", kb.min_program + kb.program_keys));
+                    lcd.print(0, 5, &format!("{:<3}\u{2502}", kb.min_program + 1));
+                    lcd.print(0, 6, &format!("{:<3}\u{2502}", kb.min_program + kb.program_keys));
 
-                    lcd.print(0, 3, &format!("Tmp\u{2502}"));
-                    lcd.print(0, 4, &format!("{:>3}\u{2502}", kb.tempo));
-
-                    lcd.print(4, 3, "Loop");
                     for (i, l) in (&self.loop_states).iter().enumerate() {
                         lcd.print_char(4 + i % 3, 4 + i / 3, match *l {
                             LoopState::Empty     => '\u{2014}', // Em dash
@@ -83,7 +83,7 @@ impl Display {
                     }
                 }
             }
-            
+
             lcd.update();
         }
 
