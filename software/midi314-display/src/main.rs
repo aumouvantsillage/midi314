@@ -55,29 +55,26 @@ impl Display {
                 },
 
                 Orientation::Portrait(_) => {
-                    lcd.print(0, 0, "Keys");
-                    lcd.print(1, 1, &format!("{:>3}-{:<3}", kb.get_min_note_name(), kb.get_max_note_name()));
+                    lcd.print(0, 0, "Key\u{2502}");
+                    lcd.print(0, 1, &format!("{:<3}\u{2502}", kb.get_min_note_name()));
+                    lcd.print(0, 2, &format!("{:<3}\u{2502}", kb.get_max_note_name()));
+
                     if kb.percussion {
-                        lcd.print(0, 2, "Prog per")
+                        lcd.print(4, 0, "Pper")
                     }
                     else {
                         // TODO map current program to instrument name.
-                        lcd.print(0, 2, &format!("Prog {:<3}", kb.current_program + 1))
+                        lcd.print(4, 0, &format!("P{:<3}", kb.current_program + 1))
                     }
-                    lcd.print(1, 3, &format!("{:>3}-{:<3}", kb.min_program + 1, kb.min_program + kb.program_keys));
-                    lcd.print(0, 4, &format!("Tmpo {:>3}", kb.tempo));
-                    lcd.print(0, 5, "Loop");
+                    lcd.print(4, 1, &format!("{:>3}", kb.min_program + 1));
+                    lcd.print(4, 2, &format!("{:>3}", kb.min_program + kb.program_keys));
+
+                    lcd.print(0, 3, &format!("Tmp\u{2502}"));
+                    lcd.print(0, 4, &format!("{:>3}\u{2502}", kb.tempo));
+
+                    lcd.print(4, 3, "Loop");
                     for (i, l) in (&self.loop_states).iter().enumerate() {
-                        let (x, y) = if i < 3 {
-                            (5 + i, 5)
-                        }
-                        else if i < 6 {
-                            (i - 2, 6)
-                        }
-                        else {
-                            (i - 1, 6)
-                        };
-                        lcd.print_char(x, y, match *l {
+                        lcd.print_char(4 + i % 3, 4 + i / 3, match *l {
                             LoopState::Empty     => '\u{2014}', // Em dash
                             LoopState::Recording => '\u{25cf}', // Black circle
                             LoopState::Playing   => '\u{25b6}', // Black right-pointing triangle
@@ -86,6 +83,7 @@ impl Display {
                     }
                 }
             }
+            
             lcd.update();
         }
 
