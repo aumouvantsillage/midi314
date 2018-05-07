@@ -1,4 +1,5 @@
 #!/bin/bash
+trap "kill 0" SIGINT SIGTERM EXIT
 
 DIR=$(cd $(dirname ${BASH_SOURCE[0]}) && pwd)
 SHARE=$DIR/../share/midi314
@@ -14,25 +15,30 @@ PIDS=()
 
 # Start Jack and the connection daemons.
 if [ $INTERFACE = "gui" ]; then
-    qjackctl --start --active-patchbay=$SHARE/midi314.qjackctl & PIDS+=($!)
+    qjackctl --start --active-patchbay=$SHARE/midi314.qjackctl &
     jack_wait -w
 else
-    (
-        # Repeatedly attempt to start jackd.
-        while true; do
-            jackd --realtime --realtime-priority 70 \
-                -d alsa --playback --rate 48000 --device $DEVICE
-            sleep 1
-        done
-    ) & PIDS+=($!)
+    echo "---- midi@3.14 ---- Starting Jack server"
+    killall --wait jackd || true
 
-    jack_wait -w
-    jack-plumbing $SHARE/midi314.rules & PIDS+=($!)
+    # Repeatedly attempt to start jackd.
+    while true; do
+        jackd --realtime --realtime-priority 70 \
+            -d alsa --playback --rate 48000 --device $DEVICE
+        sleep 1
+        echo "---- midi@3.14 ---- Failed to start Jack server, retrying"
+    done &
+
+    jack_wait --wait
+    echo "---- midi@3.14 ---- Jack server started"
+    jack-plumbing $SHARE/midi314.rules &
 fi
 
-a2jmidid -e & PIDS+=($!)
+echo "---- midi@3.14 ---- Starting ALSA to Jack MIDI daemon"
+a2jmidid -e &
 
 # Start the synthesizer.
+echo "---- midi@3.14 ---- Starting synthesizer"
 fluidsynth --server --no-shell \
     --audio-driver=jack \
     --midi-driver=jack \
@@ -40,21 +46,17 @@ fluidsynth --server --no-shell \
     --gain=2 \
     --chorus=no \
     --reverb=no \
-    ${SOUNDFONT} & PIDS+=($!)
+    ${SOUNDFONT} &
 
 # Start the looper.
-midi314-looper  & PIDS+=($!)
-midi314-display & PIDS+=($!)
+echo "---- midi@3.14 ---- Starting display"
+midi314-looper  &
+echo "---- midi@3.14 ---- Starting looper"
+midi314-display &
 
 if [ $INTERFACE = "service" ]; then
-    echo "Running forever"
+    echo "---- midi@3.14 ---- Running forever"
     sleep infinity
 else
-    read -rsp $"Press a key to terminate...\n" -n1
+    read -rsp $"---- midi@3.14 ---- Press a key to terminate...\n" -n1
 fi
-
-# Kill all processes started by this script.
-for p in ${PIDS[@]}; do
-    echo "Killing $p"
-    kill $p || true
-done
