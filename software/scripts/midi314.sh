@@ -23,8 +23,11 @@ else
 
     # Repeatedly attempt to start jackd.
     while true; do
-        jackd --realtime --realtime-priority 70 \
+        if jackd --realtime --realtime-priority 70 \
             -d alsa --playback --rate 48000 --device $DEVICE
+        then
+            break
+        fi
         sleep 1
         echo "---- midi@3.14 ---- Failed to start Jack server, retrying"
     done &
@@ -60,3 +63,5 @@ if [ $INTERFACE = "service" ]; then
 else
     read -rsp $"---- midi@3.14 ---- Press a key to terminate...\n" -n1
 fi
+
+killall --wait jackd || true
