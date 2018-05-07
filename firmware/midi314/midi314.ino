@@ -181,6 +181,8 @@ const byte potFn[] = {POT_VOLUME, POT_PAN, POT_REVERB, POT_PITCH_BEND, POT_OTHER
 
 bool eventsPending;
 
+bool isRecording;
+
 void scan() {
     // All column output pins are supposed to be high before scanning.
     // Scan the keyboard column-wise.
@@ -309,6 +311,7 @@ void processNoteEvents() {
 
 inline void stopRecording() {
     loopState[currentLoop] = LOOP_PLAYING;
+    isRecording = false;
     controlChange(DEFAULT_MIDI_CHANNEL, MIDI_CC_CUSTOM_PLAY, currentLoop);
 }
 
@@ -358,9 +361,10 @@ void playAllLoops() {
 inline void updateLoop(int n) {
     switch (loopState[n]) {
         case LOOP_EMPTY:
-            if (!DEL_KEY_PRESSED) {
+            if (!DEL_KEY_PRESSED && !isRecording) {
                 loopState[n] = LOOP_RECORDING;
                 currentLoop = n;
+                isRecording = true;
                 controlChange(DEFAULT_MIDI_CHANNEL, MIDI_CC_CUSTOM_RECORD, n);
             }
             break;
@@ -402,7 +406,7 @@ void forcePotEvents() {
 }
 
 void processFunctionKeys() {
-    if (FN_KEY_PRESSED_EVT && loopState[currentLoop] == LOOP_RECORDING) {
+    if (FN_KEY_PRESSED_EVT && isRecording) {
         stopRecording();
     }
 
@@ -513,6 +517,7 @@ void reset() {
     midiProgramOffset = 0;
     midiProgram = 0;
     currentLoop = 0;
+    isRecording = false;
 
     for (int l = 0; l < LOOPS; l ++) {
         loopState[l] = LOOP_EMPTY;
