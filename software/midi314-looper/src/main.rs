@@ -21,12 +21,32 @@ impl Loop {
         }
     }
 
-    fn record(&mut self, length : usize, cursor : usize, in_1 : &[f32], in_2 : &[f32]) {
-        let length = if length == 0 {
+    fn set_state(&mut self, state : LoopState) {
+        self.state = state;
+        if state == LoopState::Empty {
+            // Clear the loop buffer to delete.
+            let zeros = vec![0.0 ; self.samples_1.len()];
+            self.samples_1.copy_from_slice(&zeros);
+            self.samples_2.copy_from_slice(&zeros);
+        }
+    }
+
+    fn run(&mut self, from : usize, to : usize, cursor : usize, in_1 : &[f32], in_2 : &[f32], out_1 : &mut [f32], out_2 : &mut [f32]) {
+        match self.state {
+            // FIXME We should record the beginning of the buffer (to time of MIDI event)
+            // and play the beginning of the loop (output buffer from time of MIDI event) when transitioning from Recording to Playing.
+            LoopState::Recording => self.record(from, to, cursor, in_1, in_2),
+            LoopState::Playing   => self.play(from, to, cursor, out_1, out_2),
+            _                    => ()
+        }
+    }
+
+    fn record(&mut self, from : usize, to : usize, cursor : usize, in_1 : &[f32], in_2 : &[f32]) {
+        let mut length = if to == 0 {
             self.samples_1.len()
         }
         else {
-            length
+            to
         };
 
         let mut in_len = in_1.len();
@@ -52,19 +72,19 @@ impl Loop {
             in_index += copy_len;
             cursor   += copy_len;
             if cursor == length {
-                cursor = 0;
+                cursor = from;
             }
         }
     }
 
-    fn play(&self, length : usize, cursor : usize, out_1 : &mut [f32], out_2 : &mut [f32]) {
+    fn play(&self, from : usize, to : usize, cursor : usize, out_1 : &mut [f32], out_2 : &mut [f32]) {
         let mut cursor = cursor;
         for k in 0 .. out_1.len() {
             out_1[k] += self.samples_1[cursor];
             out_2[k] += self.samples_2[cursor];
             cursor += 1;
-            if cursor == length {
-                cursor = 0;
+            if cursor == to {
+                cursor = from;
             }
         }
     }
@@ -81,7 +101,8 @@ enum LooperState {
 struct Looper {
     state     : LooperState,
     loops     : Vec<Loop>,
-    length    : usize,
+    from      : usize,
+    to        : usize,
     cursor    : usize,
     threshold : f32
 }
@@ -92,7 +113,8 @@ impl Looper {
             state     : LooperState::Idle,
             loops     : vec![Loop::new(max_loop_length) ; n_loops],
             cursor    : 0,
-            length    : 0,
+            from      : 0,
+            to        : 0,
             threshold : threshold
         }
     }
@@ -119,17 +141,20 @@ impl Looper {
                 if self.is_recording() {
                     self.state = LooperState::WaitingFirstNote;
                 },
-            LooperState::WaitingFirstNote =>
-                if self.get_level(in_1, in_2) > self.threshold {
+            LooperState::WaitingFirstNote => {
+                let from = in_1.iter().zip(in_2.iter()).position(|(&x, &y)| x * x + y * y > self.threshold);
+                if let Some(f) = from  {
                     self.state = LooperState::RecordingFirstLoop;
-                    self.length = 0;
+                    self.from = f;
+                    self.to = 0;
                     self.cursor = 0;
-                },
+                }
+            },
             LooperState::RecordingFirstLoop =>
                 if self.has_record() {
                     self.state = LooperState::Running;
-                    self.length = self.cursor;
-                    self.cursor = 0;
+                    self.to = self.cursor;   // TODO self.to = self.cursor + (time of MIDI event)
+                    self.cursor = self.from; // TODO self.cursor = self.from - (time of MIDI event)
                 },
             LooperState::Running =>
                 if self.is_empty() {
@@ -138,29 +163,17 @@ impl Looper {
         }
     }
 
-    fn get_level(&mut self, in_1 : &[f32], in_2 : &[f32]) -> f32 {
-        (in_1.iter().fold(0.0, |sum, x| sum + x * x) +
-         in_2.iter().fold(0.0, |sum, x| sum + x * x)) /
-        (in_1.len() + in_2.len()) as f32
-    }
-
     fn run(&mut self, in_1 : &[f32], in_2 : &[f32], out_1 : &mut [f32], out_2 : &mut [f32]) {
         out_1.copy_from_slice(in_1);
         out_2.copy_from_slice(in_2);
 
         if self.state >= LooperState::RecordingFirstLoop {
             for l in &mut self.loops {
-                match l.state {
-                    LoopState::Recording => l.record(self.length, self.cursor, in_1, in_2),
-                    LoopState::Playing   => l.play(self.length, self.cursor, out_1, out_2),
-                    _                    => ()
-                }
+                l.run(self.from, self.to, self.cursor, in_1, in_2, out_1, out_2);
             }
             self.cursor += in_1.len();
-            if self.state == LooperState::Running {
-                if self.cursor >= self.length {
-                    self.cursor -= self.length;
-                }
+            if self.state == LooperState::Running && self.cursor >= self.to {
+                self.cursor = self.from + (self.cursor - self.to);
             }
         }
     }
@@ -172,14 +185,7 @@ impl LoopManager for Looper {
     }
 
     fn set_loop_state(&mut self, loop_index : usize, state : LoopState) {
-        let l = &mut self.loops[loop_index];
-        l.state = state;
-        if state == LoopState::Empty {
-            // Clear the loop buffer to delete.
-            let zeros = vec![0.0 ; l.samples_1.len()];
-            l.samples_1.copy_from_slice(&zeros);
-            l.samples_2.copy_from_slice(&zeros);
-        }
+        self.loops[loop_index].set_state(state);
     }
 
     fn get_loop_state(&self, loop_index : usize) -> LoopState {
@@ -205,6 +211,7 @@ fn main() {
     let cback = move |_ : &jack::Client, ps : &jack::ProcessScope| -> jack::Control {
         // Process MIDI events and update the current state.
         for e in midi_in.iter(ps) {
+            println!("Buffer size: {:?}", e);
             keyboard.update(&mut looper, e.bytes.to_vec());
         }
 
