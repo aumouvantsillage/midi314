@@ -4,7 +4,7 @@ extern crate rimd;
 extern crate num_traits;
 use num_traits::FromPrimitive;
 
-#[derive(PartialEq, Clone, Copy)]
+#[derive(PartialEq, PartialOrd, Clone, Copy)]
 pub enum LoopState {
     Empty,
     Recording,
@@ -14,7 +14,7 @@ pub enum LoopState {
 
 pub trait LoopManager {
     fn get_loop_count(&self) -> usize;
-    fn set_loop_state(&mut self, loop_index : usize, state : LoopState);
+    fn set_loop_state(&mut self, loop_index : usize, time : usize, state : LoopState);
     fn get_loop_state(&self, loop_index : usize) -> LoopState;
 
     fn is_solo(&self, loop_index : usize) -> bool {
@@ -31,27 +31,27 @@ pub trait LoopManager {
         true
     }
 
-    fn play_solo(&mut self, loop_index : usize) {
+    fn play_solo(&mut self, loop_index : usize, time : usize) {
         // The loop at the given index must be in playing or muted state.
         let current_state = self.get_loop_state(loop_index);
         if current_state != LoopState::Playing && current_state != LoopState::Muted {
             return
         }
         // Play the loop at the given index.
-        self.set_loop_state(loop_index, LoopState::Playing);
+        self.set_loop_state(loop_index, time, LoopState::Playing);
         // Mute all other playing loops.
         for i in 0..self.get_loop_count() {
             if i != loop_index && self.get_loop_state(i) == LoopState::Playing {
-                self.set_loop_state(i, LoopState::Muted)
+                self.set_loop_state(i, time, LoopState::Muted)
             }
         }
     }
 
-    fn play_all(&mut self) {
+    fn play_all(&mut self, time : usize) {
         // Play all muted loops.
         for i in 0..self.get_loop_count() {
             if self.get_loop_state(i) == LoopState::Muted {
-                self.set_loop_state(i, LoopState::Playing)
+                self.set_loop_state(i, time, LoopState::Playing)
             }
         }
     }
@@ -95,13 +95,13 @@ impl Keyboard {
         }
     }
 
-    pub fn update<T : LoopManager>(&mut self, lm : &mut T, b : Vec<u8>) -> bool {
+    pub fn update<T : LoopManager>(&mut self, lm : &mut T, time : usize, b : Vec<u8>) -> bool {
         // Convert the raw MIDI data to a MidiMessage.
         let m = rimd::MidiMessage::from_bytes(b);
 
         match m.status() {
             rimd::Status::ProgramChange => self.program_change(m.data(1)),
-            rimd::Status::ControlChange => self.control_change(lm, m.data(1), m.data(2)),
+            rimd::Status::ControlChange => self.control_change(lm, time, m.data(1), m.data(2)),
             _                           => false
         }
     }
@@ -119,16 +119,16 @@ impl Keyboard {
         true
     }
 
-    fn control_change<T : LoopManager>(&mut self, lm : &mut T, cc : u8, n : u8) -> bool{
+    fn control_change<T : LoopManager>(&mut self, lm : &mut T, time : usize, cc : u8, n : u8) -> bool{
         let index = n as usize;
         let mut result = true;
         match CustomCC::from_u8(cc) {
-            Some(CustomCC::Record)        => lm.set_loop_state(index, LoopState::Recording),
-            Some(CustomCC::Play)          => lm.set_loop_state(index, LoopState::Playing),
-            Some(CustomCC::Mute)          => lm.set_loop_state(index, LoopState::Muted),
-            Some(CustomCC::Delete)        => lm.set_loop_state(index, LoopState::Empty),
-            Some(CustomCC::Solo)          => lm.play_solo(index),
-            Some(CustomCC::All)           => lm.play_all(),
+            Some(CustomCC::Record)        => lm.set_loop_state(index, time, LoopState::Recording),
+            Some(CustomCC::Play)          => lm.set_loop_state(index, time, LoopState::Playing),
+            Some(CustomCC::Mute)          => lm.set_loop_state(index, time, LoopState::Muted),
+            Some(CustomCC::Delete)        => lm.set_loop_state(index, time, LoopState::Empty),
+            Some(CustomCC::Solo)          => lm.play_solo(index, time),
+            Some(CustomCC::All)           => lm.play_all(time),
             Some(CustomCC::SetMinPitch)   => self.min_pitch   = n as u32,
             Some(CustomCC::SetMinProgram) => self.min_program = n as u32,
             Some(CustomCC::Percussion)    => self.percussion = n != 0,

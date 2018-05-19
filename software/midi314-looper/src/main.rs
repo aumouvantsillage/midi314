@@ -8,6 +8,8 @@ use midi314::{Keyboard, LoopManager, LoopState};
 #[derive(Clone)]
 struct Loop {
     state : LoopState,
+    state_prev : LoopState,
+    transition_time : usize,
     samples_1 : Vec<f32>,
     samples_2 : Vec<f32>
 }
@@ -15,34 +17,67 @@ struct Loop {
 impl Loop {
     fn new(l : usize) -> Self {
         Self {
-            state     : LoopState::Empty,
-            samples_1 : vec![0.0 ; l],
-            samples_2 : vec![0.0 ; l]
+            state           : LoopState::Empty,
+            state_prev      : LoopState::Empty,
+            transition_time : 0,
+            samples_1       : vec![0.0 ; l],
+            samples_2       : vec![0.0 ; l]
         }
     }
 
-    fn set_state(&mut self, state : LoopState) {
+    fn set_state(&mut self, time : usize, state : LoopState) {
         self.state = state;
-        if state == LoopState::Empty {
-            // Clear the loop buffer to delete.
-            let zeros = vec![0.0 ; self.samples_1.len()];
-            self.samples_1.copy_from_slice(&zeros);
-            self.samples_2.copy_from_slice(&zeros);
-        }
+        self.transition_time = time;
     }
 
     fn run(&mut self, from : usize, to : usize, cursor : usize, in_1 : &[f32], in_2 : &[f32], out_1 : &mut [f32], out_2 : &mut [f32]) {
         match self.state {
-            // FIXME We should record the beginning of the buffer (to time of MIDI event)
-            // and play the beginning of the loop (output buffer from time of MIDI event) when transitioning from Recording to Playing.
-            LoopState::Recording => self.record(from, to, cursor, in_1, in_2),
-            LoopState::Playing   => self.play(from, to, cursor, out_1, out_2),
-            _                    => ()
+            LoopState::Empty =>
+                if self.state_prev != LoopState::Empty {
+                    // Clear the loop buffer to delete.
+                    let zeros = vec![0.0 ; self.samples_1.len()];
+                    self.samples_1.copy_from_slice(&zeros);
+                    self.samples_2.copy_from_slice(&zeros);
+                },
+            LoopState::Recording =>
+                if self.state_prev != LoopState::Recording {
+                    let in_1 = &in_1[self.transition_time..];
+                    let in_2 = &in_2[self.transition_time..];
+                    let cursor = cursor + self.transition_time;
+                    self.record(from, to, cursor, in_1, in_2);
+                }
+                else {
+                    self.record(from, to, cursor, in_1, in_2)
+                },
+            LoopState::Playing => {
+                if self.state_prev == LoopState::Recording {
+                    // When transitioning from the Recording to the Playing state,
+                    // finish recording the beginning of the input buffer (until transition time)
+                    // into the loop buffer at the cursor,
+                    let in_1 = &in_1[0..self.transition_time];
+                    let in_2 = &in_2[0..self.transition_time];
+                    self.record(from, to, cursor, in_1, in_2);
+                }
+                if self.state_prev != LoopState::Playing {
+                    // When entering the Playing state, start playing from the transition time
+                    // into the end of the output buffer.
+                    let out_1 = &mut out_1[self.transition_time..];
+                    let out_2 = &mut out_2[self.transition_time..];
+                    let cursor = cursor + self.transition_time;
+                    self.play(from, to, cursor, out_1, out_2)
+                }
+                else {
+                    self.play(from, to, cursor, out_1, out_2)
+                }
+            },
+            _ => ()
         }
+
+        self.state_prev = self.state;
     }
 
     fn record(&mut self, from : usize, to : usize, cursor : usize, in_1 : &[f32], in_2 : &[f32]) {
-        let mut length = if to == 0 {
+        let length = if to == 0 {
             self.samples_1.len()
         }
         else {
@@ -80,12 +115,12 @@ impl Loop {
     fn play(&self, from : usize, to : usize, cursor : usize, out_1 : &mut [f32], out_2 : &mut [f32]) {
         let mut cursor = cursor;
         for k in 0 .. out_1.len() {
+            if cursor >= to {
+                cursor -= to - from;
+            }
             out_1[k] += self.samples_1[cursor];
             out_2[k] += self.samples_2[cursor];
             cursor += 1;
-            if cursor == to {
-                cursor = from;
-            }
         }
     }
 }
@@ -123,12 +158,13 @@ impl Looper {
         self.loops.iter().any(|ref s| s.state == LoopState::Recording)
     }
 
-    pub fn is_playing(&self) -> bool {
-        self.loops.iter().any(|ref s| s.state == LoopState::Playing)
-    }
-
-    pub fn has_record(&self) -> bool {
-        self.loops.iter().any(|ref s| s.state == LoopState::Playing || s.state == LoopState::Muted)
+    pub fn recording_end_time(&self) -> Option<usize> {
+        for l in &self.loops {
+            if l.state_prev == LoopState::Recording && l.state >= LoopState::Playing {
+                return Some(l.transition_time)
+            }
+        }
+        None
     }
 
     pub fn is_empty(&self) -> bool {
@@ -151,10 +187,9 @@ impl Looper {
                 }
             },
             LooperState::RecordingFirstLoop =>
-                if self.has_record() {
+                if let Some(time) = self.recording_end_time() {
                     self.state = LooperState::Running;
-                    self.to = self.cursor;   // TODO self.to = self.cursor + (time of MIDI event)
-                    self.cursor = self.from; // TODO self.cursor = self.from - (time of MIDI event)
+                    self.to = self.cursor + time;
                 },
             LooperState::Running =>
                 if self.is_empty() {
@@ -184,8 +219,8 @@ impl LoopManager for Looper {
         self.loops.len()
     }
 
-    fn set_loop_state(&mut self, loop_index : usize, state : LoopState) {
-        self.loops[loop_index].set_state(state);
+    fn set_loop_state(&mut self, loop_index : usize, time : usize, state : LoopState) {
+        self.loops[loop_index].set_state(time, state);
     }
 
     fn get_loop_state(&self, loop_index : usize) -> LoopState {
@@ -211,8 +246,7 @@ fn main() {
     let cback = move |_ : &jack::Client, ps : &jack::ProcessScope| -> jack::Control {
         // Process MIDI events and update the current state.
         for e in midi_in.iter(ps) {
-            println!("Buffer size: {:?}", e);
-            keyboard.update(&mut looper, e.bytes.to_vec());
+            keyboard.update(&mut looper, e.time as usize, e.bytes.to_vec());
         }
 
         // Get the current audio buffers.
@@ -230,7 +264,7 @@ fn main() {
         jack::Control::Continue
     };
 
-    let active_client = client.activate_async((), jack::ClosureProcessHandler::new(cback)).unwrap();
+    let _active_client = client.activate_async((), jack::ClosureProcessHandler::new(cback)).unwrap();
 
     // Wait.
     loop {

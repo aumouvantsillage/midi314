@@ -84,7 +84,7 @@ impl Display {
                 }
             }
 
-            lcd.update();
+            lcd.update().unwrap();
         }
 
         println!("--");
@@ -117,7 +117,7 @@ impl LoopManager for Display {
         self.loop_states.len()
     }
 
-    fn set_loop_state(&mut self, loop_index : usize, state : LoopState) {
+    fn set_loop_state(&mut self, loop_index : usize, _time : usize, state : LoopState) {
         self.loop_states[loop_index] = state
     }
 
@@ -141,7 +141,7 @@ fn main() {
         let mut has_event = false;
 
         for e in midi_in.iter(ps) {
-            if keyboard.update(&mut display, e.bytes.to_vec()) {
+            if keyboard.update(&mut display, e.time as usize, e.bytes.to_vec()) {
                 has_event = true;
             }
         }
@@ -153,7 +153,7 @@ fn main() {
         jack::Control::Continue
     };
 
-    let active_client = client.activate_async((), jack::ClosureProcessHandler::new(cback)).unwrap();
+    let _active_client = client.activate_async((), jack::ClosureProcessHandler::new(cback)).unwrap();
 
     // Wait.
     loop {
