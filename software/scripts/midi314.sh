@@ -10,6 +10,8 @@ echo "R" > /dev/ttyACM0
 INTERFACE=${INTERFACE:-"cli"}
 SOUNDFONT=${SOUNDFONT:-/usr/share/sounds/sf2/FluidR3_GM.sf2}
 DEVICE=${DEVICE:-hw:1}
+SYNTH_GAIN=${SYNTH_GAIN:-0.2}
+PCM_GAIN=${PCM_GAIN:-95%}
 
 PIDS=()
 
@@ -18,6 +20,8 @@ if [ $INTERFACE = "gui" ]; then
     qjackctl --start --active-patchbay=$SHARE/midi314.qjackctl &
     jack_wait -w
 else
+    amixer -D $DEVICE sset PCM $PCM_GAIN
+
     echo "---- midi@3.14 ---- Starting Jack server"
     killall --wait jackd || true
 
@@ -46,7 +50,7 @@ fluidsynth --server --no-shell \
     --audio-driver=jack \
     --midi-driver=jack \
     --sample-rate=48000 \
-    --gain=2 \
+    --gain=$SYNTH_GAIN \
     --chorus=no \
     --reverb=no \
     ${SOUNDFONT} &
