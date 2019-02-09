@@ -1,7 +1,7 @@
 
-#include <MIDIUSB.h>
 #include <pitchToNote.h>
 #include <TimerThree.h>
+#include <midi314.h>
 
 // Pins connected to each row of the keyboard (from top to bottom).
 const byte rowPins[] = {7, 5, 3, 2, 0, 1};
@@ -110,9 +110,6 @@ byte potValues[POTS];
 // The pitch of the bottom-left key.
 int pitchOffset;
 
-// Indicates that MIDI events are pending.
-bool midiSent;
-
 // The MIDI program mapped to key P1.
 int midiProgramOffset;
 
@@ -135,31 +132,6 @@ enum {
 // The current state of each loop.
 byte loopState[LOOPS];
 
-// MIDI control change events.
-enum {
-    MIDI_CC_CHANNEL_VOLUME         = 7,
-    MIDI_CC_PAN                    = 10,
-    MIDI_CC_REVERB                 = 91,
-    MIDI_CC_OTHER_EFFECT           = 92,
-
-    // Looper events (non-standard).
-    MIDI_CC_CUSTOM_RECORD          = 20,
-    MIDI_CC_CUSTOM_PLAY            = 21,
-    MIDI_CC_CUSTOM_MUTE            = 22,
-    MIDI_CC_CUSTOM_DELETE          = 23,
-    MIDI_CC_CUSTOM_SOLO            = 24,
-    MIDI_CC_CUSTOM_ALL             = 25,
-    MIDI_CC_CUSTOM_SET_MIN_PITCH   = 26,
-    MIDI_CC_CUSTOM_SET_MIN_PROGRAM = 27,
-    MIDI_CC_CUSTOM_PERCUSSION      = 28,
-};
-
-// The MIDI channel of the instrument.
-#define DEFAULT_MIDI_CHANNEL 0
-
-// The MIDI channel of the percussion instruments (channel 10).
-#define PERC_MIDI_CHANNEL 9
-
 // The current MIDI channel.
 byte midiChannel;
 
@@ -176,51 +148,6 @@ enum {
 // The default assignment of potentiometers.
 const byte potFn[] = {POT_VOLUME, POT_PAN, POT_REVERB, POT_PITCH_BEND, POT_OTHER};
 
-enum {
-    POT_EVENT,
-    PRESS_EVENT,
-    RELEASE_EVENT
-};
-
-typedef struct {
-    int row;
-    int col;
-    int kind;
-} Event;
-
-#define KEY_EVENT_QUEUE_LENGTH 16
-
-Event eventQueue[KEY_EVENT_QUEUE_LENGTH];
-int eventWriteIndex;
-int eventReadIndex;
-int eventCount;
-
-void pushEvent(int k, int r, int c = 0) {
-    // Write an event to the current write location.
-    // If the queue was full, an event will be lost.
-    eventQueue[eventWriteIndex ++] = {r, c, k};
-
-    if (eventWriteIndex == KEY_EVENT_QUEUE_LENGTH) {
-        eventWriteIndex = 0;
-    }
-
-    if (eventCount < KEY_EVENT_QUEUE_LENGTH) {
-        eventCount ++;
-    }
-}
-
-void pullEvent(Event *evt) {
-    // Precondition: eventCount > 0.
-    // Read an event from the current read location.
-    *evt = eventQueue[eventReadIndex ++];
-
-    if (eventReadIndex == KEY_EVENT_QUEUE_LENGTH) {
-        eventReadIndex = 0;
-    }
-
-    eventCount --;
-}
-
 void scan() {
     // All column output pins are supposed to be high before scanning.
     // Scan the keyboard column-wise.
@@ -236,7 +163,7 @@ void scan() {
                 // A key-pressed event is valid if the key was released for a sufficient time.
                 if (!keyPressed[r][c] && keyReleasedTimeMs[r][c] == BOUNCE_TIME_MS) {
                     keyPressed[r][c] = true;
-                    pushEvent(PRESS_EVENT, r, c);
+                    midi314.pushEvent(PRESS_EVENT, r, c);
                 }
 
                 // Count the time in the pressed state. Reset the released state counter.
@@ -250,7 +177,7 @@ void scan() {
                 // A key-released event is valid if the key was pressed for a sufficient time.
                 if (keyPressed[r][c] && keyPressedTimeMs[r][c] == BOUNCE_TIME_MS) {
                     keyPressed[r][c] = false;
-                    pushEvent(RELEASE_EVENT, r, c);
+                    midi314.pushEvent(RELEASE_EVENT, r, c);
                 }
 
                 // Count the time in the released state. Reset the pressed state counter.
@@ -273,39 +200,9 @@ void scan() {
         if (analog > analogPrev + POT_STEP + POT_MARGIN ||
             analog < analogPrev - POT_MARGIN) {
             potValues[p] = analog / POT_STEP;
-            pushEvent(POT_EVENT, p);
+            midi314.pushEvent(POT_EVENT, p);
         }
     }
-}
-
-static inline void noteOn(byte channel, byte pitch, byte velocity) {
-    midiEventPacket_t noteOn = {0x09, 0x90 | channel, pitch, velocity};
-    MidiUSB.sendMIDI(noteOn);
-    midiSent = true;
-}
-
-static inline void noteOff(byte channel, byte pitch, byte velocity) {
-    midiEventPacket_t noteOff = {0x08, 0x80 | channel, pitch, velocity};
-    MidiUSB.sendMIDI(noteOff);
-    midiSent = true;
-}
-
-static inline void controlChange(byte channel, byte control, byte value) {
-    midiEventPacket_t event = {0x0B, 0xB0 | channel, control, value};
-    MidiUSB.sendMIDI(event);
-    midiSent = true;
-}
-
-static inline void programChange(byte channel, byte value) {
-    midiEventPacket_t event = {0x0C, 0xC0 | channel, value, value};
-    MidiUSB.sendMIDI(event);
-    midiSent = true;
-}
-
-static inline void pitchBend(byte channel, int bend) {
-    midiEventPacket_t event = {0x0E, 0xE0 | channel, bend & 0x7F, bend >> 7};
-    MidiUSB.sendMIDI(event);
-    midiSent = true;
 }
 
 static inline int getMinPitch() {
@@ -321,14 +218,14 @@ bool isRecording;
 inline void stopRecording() {
     loopState[currentLoop] = LOOP_PLAYING;
     isRecording = false;
-    controlChange(DEFAULT_MIDI_CHANNEL, MIDI_CC_CUSTOM_PLAY, currentLoop);
+    midi314.controlChange(DEFAULT_MIDI_CHANNEL, MIDI_CC_CUSTOM_PLAY, currentLoop);
 }
 
 inline void updatePitchOffset(int n) {
     if (n < 0 && getMinPitch() + n >= pitchA0 || n > 0 && getMaxPitch() + n <= pitchC8) {
         pitchOffset += n;
     }
-    controlChange(DEFAULT_MIDI_CHANNEL, MIDI_CC_CUSTOM_SET_MIN_PITCH, getMinPitch());
+    midi314.controlChange(DEFAULT_MIDI_CHANNEL, MIDI_CC_CUSTOM_SET_MIN_PITCH, getMinPitch());
 }
 
 inline void updateMidiProgramOffset(int n) {
@@ -342,7 +239,7 @@ inline void updateMidiProgramOffset(int n) {
     else {
         midiProgramOffset = nextOffset;
     }
-    controlChange(DEFAULT_MIDI_CHANNEL, MIDI_CC_CUSTOM_SET_MIN_PROGRAM, midiProgramOffset);
+    midi314.controlChange(DEFAULT_MIDI_CHANNEL, MIDI_CC_CUSTOM_SET_MIN_PROGRAM, midiProgramOffset);
 }
 
 void playSolo(int n) {
@@ -354,7 +251,7 @@ void playSolo(int n) {
             loopState[i] = LOOP_MUTED;
         }
     }
-    controlChange(DEFAULT_MIDI_CHANNEL, MIDI_CC_CUSTOM_SOLO, n);
+    midi314.controlChange(DEFAULT_MIDI_CHANNEL, MIDI_CC_CUSTOM_SOLO, n);
 }
 
 void playAllLoops() {
@@ -364,7 +261,7 @@ void playAllLoops() {
             loopState[i] = LOOP_PLAYING;
         }
     }
-    controlChange(DEFAULT_MIDI_CHANNEL, MIDI_CC_CUSTOM_ALL, 0);
+    midi314.controlChange(DEFAULT_MIDI_CHANNEL, MIDI_CC_CUSTOM_ALL, 0);
 }
 
 inline void updateLoop(int n) {
@@ -374,33 +271,33 @@ inline void updateLoop(int n) {
                 loopState[n] = LOOP_RECORDING;
                 currentLoop = n;
                 isRecording = true;
-                controlChange(DEFAULT_MIDI_CHANNEL, MIDI_CC_CUSTOM_RECORD, n);
+                midi314.controlChange(DEFAULT_MIDI_CHANNEL, MIDI_CC_CUSTOM_RECORD, n);
             }
             break;
         case LOOP_PLAYING:
             if (DEL_KEY_PRESSED) {
                 loopState[n] = LOOP_EMPTY;
-                controlChange(DEFAULT_MIDI_CHANNEL, MIDI_CC_CUSTOM_DELETE, n);
+                midi314.controlChange(DEFAULT_MIDI_CHANNEL, MIDI_CC_CUSTOM_DELETE, n);
             }
             else if (SOLO_KEY_PRESSED) {
                 playSolo(n);
             }
             else {
                 loopState[n] = LOOP_MUTED;
-                controlChange(DEFAULT_MIDI_CHANNEL, MIDI_CC_CUSTOM_MUTE, n);
+                midi314.controlChange(DEFAULT_MIDI_CHANNEL, MIDI_CC_CUSTOM_MUTE, n);
             }
             break;
         case LOOP_MUTED:
             if (DEL_KEY_PRESSED) {
                 loopState[n] = LOOP_EMPTY;
-                controlChange(DEFAULT_MIDI_CHANNEL, MIDI_CC_CUSTOM_DELETE, n);
+                midi314.controlChange(DEFAULT_MIDI_CHANNEL, MIDI_CC_CUSTOM_DELETE, n);
             }
             else if (SOLO_KEY_PRESSED) {
                 playSolo(n);
             }
             else {
                 loopState[n] = LOOP_PLAYING;
-                controlChange(DEFAULT_MIDI_CHANNEL, MIDI_CC_CUSTOM_PLAY, n);
+                midi314.controlChange(DEFAULT_MIDI_CHANNEL, MIDI_CC_CUSTOM_PLAY, n);
             }
             break;
     }
@@ -408,7 +305,7 @@ inline void updateLoop(int n) {
 
 void forcePotEvents() {
     for (int p = 0; p < POTS; p ++) {
-        pushEvent(POT_EVENT, p);
+        midi314.pushEvent(POT_EVENT, p);
     }
 }
 
@@ -426,11 +323,11 @@ void processFunctionKey(int r, int c) {
         case KEY_PERC:
             if (midiChannel == DEFAULT_MIDI_CHANNEL) {
                 midiChannel = PERC_MIDI_CHANNEL;
-                controlChange(DEFAULT_MIDI_CHANNEL, MIDI_CC_CUSTOM_PERCUSSION, 127);
+                midi314.controlChange(DEFAULT_MIDI_CHANNEL, MIDI_CC_CUSTOM_PERCUSSION, 127);
             }
             else {
                 midiChannel = DEFAULT_MIDI_CHANNEL;
-                controlChange(DEFAULT_MIDI_CHANNEL, MIDI_CC_CUSTOM_PERCUSSION, 0);
+                midi314.controlChange(DEFAULT_MIDI_CHANNEL, MIDI_CC_CUSTOM_PERCUSSION, 0);
             }
             forcePotEvents();
             break;
@@ -445,7 +342,7 @@ void processFunctionKey(int r, int c) {
                         break;
                     default:
                         midiProgram = (midiProgramOffset + arg) % 128;
-                        programChange(midiChannel, midiProgram);
+                        midi314.programChange(midiChannel, midiProgram);
                 }
             }
             break;
@@ -474,9 +371,9 @@ inline byte getNote(int r, int c) {
 }
 
 void processEvents() {
-    while (eventCount > 0) {
+    while (midi314.hasEvent()) {
         Event evt;
-        pullEvent(&evt);
+        midi314.pullEvent(&evt);
 
         byte potValue;
 
@@ -484,11 +381,11 @@ void processEvents() {
             case POT_EVENT:
                 potValue = potValues[evt.row];
                 switch (potFn[evt.row]) {
-                    case POT_VOLUME:     controlChange(midiChannel, MIDI_CC_CHANNEL_VOLUME, potValue); break;
-                    case POT_PITCH_BEND: pitchBend(midiChannel, ((int)potValue - 64) * 128 + 0x2000);  break;
-                    case POT_PAN:        controlChange(midiChannel, MIDI_CC_PAN, potValue);            break;
-                    case POT_REVERB:     controlChange(midiChannel, MIDI_CC_REVERB, potValue);
-                    case POT_OTHER:      controlChange(midiChannel, MIDI_CC_OTHER_EFFECT, potValue);
+                    case POT_VOLUME:     midi314.controlChange(midiChannel, MIDI_CC_CHANNEL_VOLUME, potValue); break;
+                    case POT_PITCH_BEND: midi314.pitchBend(midiChannel, ((int)potValue - 64) * 128 + 0x2000);  break;
+                    case POT_PAN:        midi314.controlChange(midiChannel, MIDI_CC_PAN, potValue);            break;
+                    case POT_REVERB:     midi314.controlChange(midiChannel, MIDI_CC_REVERB, potValue);         break;
+                    case POT_OTHER:      midi314.controlChange(midiChannel, MIDI_CC_OTHER_EFFECT, potValue);
                 }
                 break;
 
@@ -503,14 +400,14 @@ void processEvents() {
                 }
                 else {
                     keyNoteOn[evt.row][evt.col] = true;
-                    noteOn(midiChannel, getNote(evt.row, evt.col), VELOCITY);
+                    midi314.noteOn(midiChannel, getNote(evt.row, evt.col), VELOCITY);
                 }
                 break;
 
             case RELEASE_EVENT:
                 if (keyNoteOn[evt.row][evt.col]) {
                     keyNoteOn[evt.row][evt.col] = false;
-                    noteOff(midiChannel, getNote(evt.row, evt.col), VELOCITY);
+                    midi314.noteOff(midiChannel, getNote(evt.row, evt.col), VELOCITY);
                 }
                 break;
         }
@@ -518,15 +415,12 @@ void processEvents() {
 }
 
 void reset() {
-    // Clear all keyboard events.
-    eventWriteIndex = 0;
-    eventReadIndex = 0;
-    eventCount = 0;
+    midi314.reset();
 
     // Read the initial potentiometer values.
     for (int p = 0; p < POTS; p ++) {
         potValues[p] = analogRead(potPins[p]) / POT_STEP;
-        pushEvent(POT_EVENT, p);
+        midi314.pushEvent(POT_EVENT, p);
     }
 
     pitchOffset = 0;
@@ -539,8 +433,6 @@ void reset() {
     for (int l = 0; l < LOOPS; l ++) {
         loopState[l] = LOOP_EMPTY;
     }
-
-    midiSent = false;
 
     Serial.println("Ready");
 }
@@ -569,11 +461,7 @@ void setup() {
 
 void loop() {
     processEvents();
-
-    if (midiSent) {
-        MidiUSB.flush();
-        midiSent = false;
-    }
+    midi314.flushMidi();
 
     if (Serial.available() > 0) {
         // TODO More configurations via the serial line.
