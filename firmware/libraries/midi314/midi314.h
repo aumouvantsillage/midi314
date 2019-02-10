@@ -10,6 +10,7 @@
 
 // MIDI control change events.
 enum {
+    MIDI_CC_MODULATIION            = 1,
     MIDI_CC_CHANNEL_VOLUME         = 7,
     MIDI_CC_PAN                    = 10,
     MIDI_CC_REVERB                 = 91,
@@ -24,6 +25,8 @@ enum {
     MIDI_CC_CUSTOM_ALL             = 25,
     MIDI_CC_CUSTOM_SET_MIN_PITCH   = 26,
     MIDI_CC_CUSTOM_SET_MIN_PROGRAM = 27,
+
+    // UI events (non-standard)
     MIDI_CC_CUSTOM_PERCUSSION      = 28,
 };
 
@@ -34,7 +37,23 @@ enum {
 #define PERC_MIDI_CHANNEL 9
 
 /* --------------------------------------------------------------------------- *
- * Event queue
+ * Specific definitions
+ * --------------------------------------------------------------------------- */
+
+// Function ids for potentiometers.
+enum {
+    POT_NONE,
+    POT_VOLUME,
+    POT_MODULATION,
+    POT_PITCH_BEND,
+    POT_PAN,
+    POT_REVERB,
+    POT_OTHER,
+};
+
+
+/* --------------------------------------------------------------------------- *
+ * Midi314 class
  * --------------------------------------------------------------------------- */
 
 enum {
@@ -101,7 +120,10 @@ public:
         }
     }
 
-    bool hasEvent();
+    bool hasEvent() {
+        return eventCount > 0;
+    }
+
     void pushEvent(int k, int r, int c = 0);
     void pullEvent(Event *evt);
 };

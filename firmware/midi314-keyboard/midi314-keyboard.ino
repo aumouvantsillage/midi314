@@ -135,16 +135,6 @@ byte loopState[LOOPS];
 // The current MIDI channel.
 byte midiChannel;
 
-// Function ids for potentiometers.
-enum {
-    POT_NONE,
-    POT_VOLUME,
-    POT_PITCH_BEND,
-    POT_PAN,
-    POT_REVERB,
-    POT_OTHER,
-};
-
 // The default assignment of potentiometers.
 const byte potFn[] = {POT_VOLUME, POT_PAN, POT_REVERB, POT_PITCH_BEND, POT_OTHER};
 
@@ -382,6 +372,7 @@ void processEvents() {
                 potValue = potValues[evt.row];
                 switch (potFn[evt.row]) {
                     case POT_VOLUME:     midi314.controlChange(midiChannel, MIDI_CC_CHANNEL_VOLUME, potValue); break;
+                    case POT_MODULATION: midi314.controlChange(midiChannel, MIDI_CC_MODULATIION, (potValue >= 64 ? potValue - 64 : 63 - potValue) * 2); break;
                     case POT_PITCH_BEND: midi314.pitchBend(midiChannel, ((int)potValue - 64) * 128 + 0x2000);  break;
                     case POT_PAN:        midi314.controlChange(midiChannel, MIDI_CC_PAN, potValue);            break;
                     case POT_REVERB:     midi314.controlChange(midiChannel, MIDI_CC_REVERB, potValue);         break;

@@ -20,18 +20,8 @@ const byte potPins[] = {A3, A2};
 // The value of each potentiometer, range 0 to 127.
 byte potValues[POTS];
 
-// Function ids for potentiometers.
-enum {
-    POT_NONE,
-    POT_VOLUME,
-    POT_PITCH_BEND,
-    POT_PAN,
-    POT_REVERB,
-    POT_OTHER,
-};
-
 // The default assignment of potentiometers.
-const byte potFn[] = {POT_OTHER, POT_PITCH_BEND};
+const byte potFn[] = {POT_PITCH_BEND, POT_MODULATION};
 
 void scan() {
     // Read potentiometer values.
@@ -64,6 +54,7 @@ void processEvents() {
                 potValue = potValues[evt.row];
                 switch (potFn[evt.row]) {
                     case POT_VOLUME:     midi314.controlChange(MIDI_CHANNEL, MIDI_CC_CHANNEL_VOLUME, potValue); break;
+                    case POT_MODULATION: midi314.controlChange(MIDI_CHANNEL, MIDI_CC_MODULATIION, (potValue >= 64 ? potValue - 64 : 63 - potValue) * 2); break;
                     case POT_PITCH_BEND: midi314.pitchBend(MIDI_CHANNEL, ((int)potValue - 64) * 128 + 0x2000);  break;
                     case POT_PAN:        midi314.controlChange(MIDI_CHANNEL, MIDI_CC_PAN, potValue);            break;
                     case POT_REVERB:     midi314.controlChange(MIDI_CHANNEL, MIDI_CC_REVERB, potValue);         break;

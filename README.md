@@ -50,6 +50,6 @@ TODO
 * Record loop to a file.
 * Try alternative synthesizers.
 * Find a solution for safe power-off.
-* Fix unresponsive keyboard for several seconds on boot.
-* Fix sporadic delayed response to key presses.
+* Raspberry Pi: reduce boot time.
+* Raspberry Pi: fix unresponsive keyboard for several seconds on boot.
 * Check issue with volume after recording several loops.

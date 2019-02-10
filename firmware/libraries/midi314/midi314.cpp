@@ -14,10 +14,6 @@ void Midi314::reset() {
     flushMidi();
 }
 
-bool Midi314::hasEvent() {
-    return eventCount > 0;
-}
-
 void Midi314::pushEvent(int k, int r, int c = 0) {
     // Write an event to the current write location.
     // If the queue was full, an event will be lost.
