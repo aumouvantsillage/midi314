@@ -2,13 +2,13 @@
 Potentiometers
 ==============
 
-| Pot | Function                    |
-|:----|:----------------------------|
-| 1   | Channel volume              |
-| 2   | Balance                     |
-| 3   | Reverb                      |
-| 4   | Pitch bend                  |
-| 5   | Other (instrument-specific) |
+| Pot | Function       |
+|:----|:---------------|
+| 1   | Channel volume |
+| 2   | Balance        |
+| 3   | Reverb         |
+| 4   | Chorus         |
+| 5   | Modulation     |
 
 There is no potentiometer for the main volume: the MIDI instrument must provide
 a way to set the output volume.
@@ -38,12 +38,19 @@ When the `Fn` key is pressed, the other keys have special functions:
 | `Del` + `L#`  | Delete a loop.                                       |
 | `Solo` + `L#` | Mute all other loops and play the selected one only. |
 | `All`         | Unmute all muted loops.                              |
+| `Off`         | All notes off                                        |
 
 While recording a loop, pressing `Fn` alone stops the recording and starts the loop.
+
+Joystick
+========
+
+| Direction  | Function   |
+|:-----------|:-----------|
+| Horizontal | Pitch bend |
+| Vertical   | Expression |
 
 Not implemented yet
 ===================
 
-* Reverb
-* Other effect
 * Tempo

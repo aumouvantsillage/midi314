@@ -69,6 +69,7 @@ enum {
     KEY_TEMPO  = 0x40,
     KEY_LOOP   = 0x50,
     KEY_PERC   = 0x60,
+    KEY_PANIC  = 0x70,
 
     // Multi-purpose Up/Down key codes, to be combined with
     // KEY_OCTAVE, KEY_SEMI, KEY_PROG, KEY_TEMPO.
@@ -88,7 +89,7 @@ const byte keyFn[ROWS][COLS] = {
     KEY_LOOP|KEY_DEL,  KEY_LOOP  |KEY_SOLO, KEY_LOOP  |KEY_ALL, KEY_LOOP |0,        KEY_LOOP |1,        KEY_LOOP |2,        KEY_LOOP|3,      // Bottom row, left
     KEY_NONE,          KEY_NONE,            KEY_NONE,           KEY_NONE,           KEY_NONE,           KEY_NONE,           KEY_PERC,        // Top row, right
     KEY_PROG|5,        KEY_PROG  |6,        KEY_PROG  |7,       KEY_PROG |8,        KEY_PROG |9,        KEY_PROG |KEY_DOWN, KEY_PROG|KEY_UP, // Middle row, right
-    KEY_LOOP|4,        KEY_LOOP  |5,        KEY_LOOP  |6,       KEY_LOOP |7,        KEY_LOOP |8,        KEY_NONE,           KEY_NONE         // Bottom row, right
+    KEY_LOOP|4,        KEY_LOOP  |5,        KEY_LOOP  |6,       KEY_LOOP |7,        KEY_LOOP |8,        KEY_NONE,           KEY_PANIC        // Bottom row, right
 };
 
 #define FN_KEY_PRESSED keyPressed[0][0]
@@ -136,7 +137,7 @@ byte loopState[LOOPS];
 byte midiChannel;
 
 // The default assignment of potentiometers.
-const byte potFn[] = {POT_VOLUME, POT_PAN, POT_REVERB, POT_PITCH_BEND, POT_OTHER};
+const byte potFn[] = {POT_VOLUME, POT_PAN, POT_REVERB, POT_CHORUS, POT_MODULATION};
 
 void scan() {
     // All column output pins are supposed to be high before scanning.
@@ -351,6 +352,9 @@ void processFunctionKey(int r, int c) {
                     updateLoop(arg);
             }
             break;
+        case KEY_PANIC:
+            midi314.controlChange(DEFAULT_MIDI_CHANNEL, MIDI_CC_ALL_NOTES_OFF, 0);
+            break;
     }
 }
 
@@ -372,11 +376,12 @@ void processEvents() {
                 potValue = potValues[evt.row];
                 switch (potFn[evt.row]) {
                     case POT_VOLUME:     midi314.controlChange(midiChannel, MIDI_CC_CHANNEL_VOLUME, potValue); break;
-                    case POT_MODULATION: midi314.controlChange(midiChannel, MIDI_CC_MODULATIION, (potValue >= 64 ? potValue - 64 : 63 - potValue) * 2); break;
+                    case POT_MODULATION: midi314.controlChange(midiChannel, MIDI_CC_MODULATIION, potValue);    break;
+                    case POT_EXPRESSION: midi314.controlChange(midiChannel, MIDI_CC_EXPRESSION,  potValue);    break;
                     case POT_PITCH_BEND: midi314.pitchBend(midiChannel, ((int)potValue - 64) * 128 + 0x2000);  break;
                     case POT_PAN:        midi314.controlChange(midiChannel, MIDI_CC_PAN, potValue);            break;
                     case POT_REVERB:     midi314.controlChange(midiChannel, MIDI_CC_REVERB, potValue);         break;
-                    case POT_OTHER:      midi314.controlChange(midiChannel, MIDI_CC_OTHER_EFFECT, potValue);
+                    case POT_CHORUS:     midi314.controlChange(midiChannel, MIDI_CC_CHORUS, potValue);         break;
                 }
                 break;
 

@@ -13,8 +13,10 @@ enum {
     MIDI_CC_MODULATIION            = 1,
     MIDI_CC_CHANNEL_VOLUME         = 7,
     MIDI_CC_PAN                    = 10,
+    MIDI_CC_EXPRESSION             = 11,
     MIDI_CC_REVERB                 = 91,
-    MIDI_CC_OTHER_EFFECT           = 92,
+    MIDI_CC_CHORUS                 = 93,
+    MIDI_CC_ALL_NOTES_OFF          = 123,
 
     // Looper events (non-standard).
     MIDI_CC_CUSTOM_RECORD          = 20,
@@ -45,12 +47,18 @@ enum {
     POT_NONE,
     POT_VOLUME,
     POT_MODULATION,
+    POT_EXPRESSION,
     POT_PITCH_BEND,
     POT_PAN,
     POT_REVERB,
-    POT_OTHER,
+    POT_CHORUS,
 };
 
+enum {
+    POT_LINEAR,
+    POT_QUAD,
+    POT_BIQUAD
+};
 
 /* --------------------------------------------------------------------------- *
  * Midi314 class

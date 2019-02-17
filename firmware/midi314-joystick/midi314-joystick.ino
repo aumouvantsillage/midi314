@@ -8,12 +8,6 @@ const byte potPins[] = {A3, A2};
 // The number of potentiometers.
 #define POTS sizeof(potPins)
 
-// The step between consecutive potetiometer stops.
-#define POT_STEP 8
-
-// The hysteresis threshold to update the potentiometer value.
-#define POT_MARGIN 2
-
 // The MIDI channel of the instrument.
 #define MIDI_CHANNEL DEFAULT_MIDI_CHANNEL
 
@@ -21,16 +15,46 @@ const byte potPins[] = {A3, A2};
 byte potValues[POTS];
 
 // The default assignment of potentiometers.
-const byte potFn[] = {POT_PITCH_BEND, POT_MODULATION};
+const byte potFn[] = {POT_PITCH_BEND, POT_EXPRESSION};
+
+const byte potScale[] = {POT_BIQUAD, POT_BIQUAD};
+
+// The minimum value of each potentiometer.
+int potLow[POTS];
+
+// The maximum value of each potentiometer.
+int potHigh[POTS];
+
+byte potRead(int p) {
+    int analog = analogRead(potPins[p]);
+    long avg, dx, dy;
+    long val = analog, low = potLow[p], high = potHigh[p];
+    switch (potScale[p]) {
+        case POT_QUAD:
+            dx = analog - potLow[p];
+            dy = potHigh[p] - potLow[p];
+            val = sq(dx);
+            low = 0;
+            high = sq(dy);
+            break;
+        case POT_BIQUAD:
+            avg = (potLow[p] + potHigh[p]) / 2;
+            dx = analog - avg;
+            dy = potHigh[p] - avg;
+            val = dx >= 0 ? sq(dx) : -sq(dx);
+            high = sq(dy);
+            low = -high;
+            break;
+    }
+    return constrain(map(val, low, high, 0, 127), 0, 127);
+}
 
 void scan() {
     // Read potentiometer values.
     for (int p = 0; p < POTS; p ++) {
-        int analogPrev = (int)potValues[p] * POT_STEP;
-        int analog = analogRead(potPins[p]);
-        if (analog > analogPrev + POT_STEP + POT_MARGIN ||
-            analog < analogPrev - POT_MARGIN) {
-            potValues[p] = analog / POT_STEP;
+        byte value = potRead(p);
+        if (value != potValues[p]) {
+            potValues[p] = value;
             midi314.pushEvent(POT_EVENT, p);
         }
     }
@@ -55,10 +79,11 @@ void processEvents() {
                 switch (potFn[evt.row]) {
                     case POT_VOLUME:     midi314.controlChange(MIDI_CHANNEL, MIDI_CC_CHANNEL_VOLUME, potValue); break;
                     case POT_MODULATION: midi314.controlChange(MIDI_CHANNEL, MIDI_CC_MODULATIION, (potValue >= 64 ? potValue - 64 : 63 - potValue) * 2); break;
+                    case POT_EXPRESSION: midi314.controlChange(MIDI_CHANNEL, MIDI_CC_EXPRESSION,  potValue);    break;
                     case POT_PITCH_BEND: midi314.pitchBend(MIDI_CHANNEL, ((int)potValue - 64) * 128 + 0x2000);  break;
                     case POT_PAN:        midi314.controlChange(MIDI_CHANNEL, MIDI_CC_PAN, potValue);            break;
                     case POT_REVERB:     midi314.controlChange(MIDI_CHANNEL, MIDI_CC_REVERB, potValue);         break;
-                    case POT_OTHER:      midi314.controlChange(MIDI_CHANNEL, MIDI_CC_OTHER_EFFECT, potValue);
+                    case POT_CHORUS:     midi314.controlChange(MIDI_CHANNEL, MIDI_CC_CHORUS, potValue);         break;
                 }
                 break;
 
@@ -76,7 +101,7 @@ void reset() {
 
     // Read the initial potentiometer values.
     for (int p = 0; p < POTS; p ++) {
-        potValues[p] = analogRead(potPins[p]) / POT_STEP;
+        potValues[p] = potRead(p);
         midi314.pushEvent(POT_EVENT, p);
     }
 
@@ -84,6 +109,18 @@ void reset() {
 }
 
 void setup() {
+    for (int p = 0; p < POTS; p ++) {
+        int value = analogRead(potPins[p]);
+        potLow[p] = 2 * value - 1023;
+        if (potLow[p] < 0) {
+            potLow[p] = 0;
+        }
+        potHigh[p] = 2 * value;
+        if (potHigh[p] > 1023) {
+            potHigh[p] = 1023;
+        }
+    }
+
     Serial.begin(115200);
 
     reset();
