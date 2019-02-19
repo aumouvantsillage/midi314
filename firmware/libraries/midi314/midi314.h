@@ -54,12 +54,6 @@ enum {
     POT_CHORUS,
 };
 
-enum {
-    POT_LINEAR,
-    POT_QUAD,
-    POT_BIQUAD
-};
-
 /* --------------------------------------------------------------------------- *
  * Midi314 class
  * --------------------------------------------------------------------------- */
@@ -90,6 +84,8 @@ class Midi314 {
 public:
     Midi314();
     void reset();
+
+    void processPotEvent(byte channel, byte fn, byte value);
 
     void noteOn(byte channel, byte pitch, byte velocity) {
         midiEventPacket_t mep = {0x09, 0x90 | channel, pitch, velocity};

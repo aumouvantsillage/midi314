@@ -7,6 +7,18 @@ Midi314::Midi314() {
     reset();
 }
 
+void Midi314::processPotEvent(byte channel, byte fn, byte value) {
+    switch (fn) {
+        case POT_VOLUME:     midi314.controlChange(channel, MIDI_CC_CHANNEL_VOLUME, value); break;
+        case POT_MODULATION: midi314.controlChange(channel, MIDI_CC_MODULATIION, value);    break;
+        case POT_EXPRESSION: midi314.controlChange(channel, MIDI_CC_EXPRESSION,  value);    break;
+        case POT_PITCH_BEND: midi314.pitchBend(channel, ((int)value - 64) * 128 + 0x2000);  break;
+        case POT_PAN:        midi314.controlChange(channel, MIDI_CC_PAN, value);            break;
+        case POT_REVERB:     midi314.controlChange(channel, MIDI_CC_REVERB, value);         break;
+        case POT_CHORUS:     midi314.controlChange(channel, MIDI_CC_CHORUS, value);         break;
+    }
+}
+
 void Midi314::reset() {
     eventWriteIndex = 0;
     eventReadIndex = 0;

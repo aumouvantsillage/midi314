@@ -4,13 +4,13 @@
 #include <midi314.h>
 
 // Pins connected to each row of the keyboard (from top to bottom).
-const byte rowPins[] = {7, 5, 3, 2, 0, 1};
+static const byte rowPins[] = {7, 5, 3, 2, 0, 1};
 
 // Pins connected to each column of the keyboard (from left to right).
-const byte colPins[] = {10, 16, 14, 15, 18, 19, 20};
+static const byte colPins[] = {10, 16, 14, 15, 18, 19, 20};
 
 // Pins connected to each potentiometer (from left to right).
-const byte potPins[] = {A9, A8, A7, A6, A3};
+static const byte potPins[] = {A9, A8, A7, A6, A3};
 
 // The number of keyboard rows.
 #define ROWS sizeof(rowPins)
@@ -25,16 +25,16 @@ const byte potPins[] = {A9, A8, A7, A6, A3};
 #define BOUNCE_TIME_MS 5
 
 // The number of consecutive milliseconds in the pressed state for each key.
-byte keyPressedTimeMs[ROWS][COLS];
+static byte keyPressedTimeMs[ROWS][COLS];
 
 // The number of consecutive milliseconds in the released state for each key.
-byte keyReleasedTimeMs[ROWS][COLS];
+static byte keyReleasedTimeMs[ROWS][COLS];
 
 // The pressed state for each key after debouncing.
-bool keyPressed[ROWS][COLS];
+static bool keyPressed[ROWS][COLS];
 
 // The default pitch associated with each key.
-const byte keyNotes[ROWS][COLS] = {
+static const byte keyNotes[ROWS][COLS] = {
     pitchC3,  pitchD3,  pitchE3,  pitchG3b, pitchA3b, pitchB3b, pitchC4,  // Top row, left
     pitchD3b, pitchE3b, pitchF3,  pitchG3,  pitchA3,  pitchB3,  pitchD4b, // Middle row, left
     pitchC3,  pitchD3,  pitchE3,  pitchG3b, pitchA3b, pitchB3b, pitchC4,  // Bottom row, left
@@ -45,7 +45,7 @@ const byte keyNotes[ROWS][COLS] = {
 
 // The percussion number associated with each key.
 // Not used: 58, 69, 71, 72, 73, 74, 75
-const byte keyPerc[ROWS][COLS] = {
+static const byte keyPerc[ROWS][COLS] = {
     0,  61, 60, 64, 63, 62, 66, // Top row, left
     42, 44, 46, 49, 51, 52, 55, // Middle row, left
     35, 36, 38, 40, 37, 41, 43, // Bottom row, left
@@ -55,7 +55,7 @@ const byte keyPerc[ROWS][COLS] = {
 };
 
 // Indicates whether a note is playing for each key.
-bool keyNoteOn[ROWS][COLS];
+static bool keyNoteOn[ROWS][COLS];
 
 // Function ids for keys.
 enum {
@@ -83,7 +83,7 @@ enum {
 };
 
 // The special functions associated with each key.
-const byte keyFn[ROWS][COLS] = {
+static const byte keyFn[ROWS][COLS] = {
     KEY_FN,            KEY_OCTAVE|KEY_DOWN, KEY_OCTAVE|KEY_UP,  KEY_TEMPO|KEY_DOWN, KEY_TEMPO|KEY_NONE, KEY_TEMPO|KEY_UP,   KEY_NONE,        // Top row, left
     KEY_SEMI|KEY_DOWN, KEY_SEMI  |KEY_UP,   KEY_PROG  |0,       KEY_PROG |1,        KEY_PROG |2,        KEY_PROG |3,        KEY_PROG|4,      // Middle row, left
     KEY_LOOP|KEY_DEL,  KEY_LOOP  |KEY_SOLO, KEY_LOOP  |KEY_ALL, KEY_LOOP |0,        KEY_LOOP |1,        KEY_LOOP |2,        KEY_LOOP|3,      // Bottom row, left
@@ -103,22 +103,22 @@ const byte keyFn[ROWS][COLS] = {
 #define POT_MARGIN 2
 
 // The value of each potentiometer, range 0 to 127.
-byte potValues[POTS];
+static byte potValues[POTS];
 
 // The default note velocity.
 #define VELOCITY 127
 
 // The pitch of the bottom-left key.
-int pitchOffset;
+static int pitchOffset;
 
 // The MIDI program mapped to key P1.
-int midiProgramOffset;
+static int midiProgramOffset;
 
 // The current MIDI program number.
-byte midiProgram;
+static byte midiProgram;
 
 // The number of the current loop.
-byte currentLoop;
+static byte currentLoop;
 
 // The number of supported loops.
 #define LOOPS 9
@@ -131,15 +131,15 @@ enum {
 };
 
 // The current state of each loop.
-byte loopState[LOOPS];
+static byte loopState[LOOPS];
 
 // The current MIDI channel.
-byte midiChannel;
+static byte midiChannel;
 
 // The default assignment of potentiometers.
-const byte potFn[] = {POT_VOLUME, POT_PAN, POT_REVERB, POT_CHORUS, POT_MODULATION};
+static const byte potFn[] = {POT_VOLUME, POT_PAN, POT_REVERB, POT_CHORUS, POT_MODULATION};
 
-void scan() {
+static void scan() {
     // All column output pins are supposed to be high before scanning.
     // Scan the keyboard column-wise.
     for (int c = 0; c < COLS; c ++) {
@@ -204,22 +204,22 @@ static inline int getMaxPitch() {
     return pitchOffset + keyNotes[ROWS-2][COLS-1];
 }
 
-bool isRecording;
+static bool isRecording;
 
-inline void stopRecording() {
+static inline void stopRecording() {
     loopState[currentLoop] = LOOP_PLAYING;
     isRecording = false;
     midi314.controlChange(DEFAULT_MIDI_CHANNEL, MIDI_CC_CUSTOM_PLAY, currentLoop);
 }
 
-inline void updatePitchOffset(int n) {
+static inline void updatePitchOffset(int n) {
     if (n < 0 && getMinPitch() + n >= pitchA0 || n > 0 && getMaxPitch() + n <= pitchC8) {
         pitchOffset += n;
     }
     midi314.controlChange(DEFAULT_MIDI_CHANNEL, MIDI_CC_CUSTOM_SET_MIN_PITCH, getMinPitch());
 }
 
-inline void updateMidiProgramOffset(int n) {
+static inline void updateMidiProgramOffset(int n) {
     int nextOffset = midiProgramOffset + n;
     if (nextOffset < 0) {
         midiProgramOffset = 120;
@@ -233,7 +233,7 @@ inline void updateMidiProgramOffset(int n) {
     midi314.controlChange(DEFAULT_MIDI_CHANNEL, MIDI_CC_CUSTOM_SET_MIN_PROGRAM, midiProgramOffset);
 }
 
-void playSolo(int n) {
+static void playSolo(int n) {
     if (loopState[n] == LOOP_MUTED) {
         loopState[n] = LOOP_PLAYING;
     }
@@ -245,7 +245,7 @@ void playSolo(int n) {
     midi314.controlChange(DEFAULT_MIDI_CHANNEL, MIDI_CC_CUSTOM_SOLO, n);
 }
 
-void playAllLoops() {
+static void playAllLoops() {
     // Unmute all muted loops.
     for (int i = 0; i < LOOPS; i ++) {
         if (loopState[i] == LOOP_MUTED) {
@@ -255,7 +255,7 @@ void playAllLoops() {
     midi314.controlChange(DEFAULT_MIDI_CHANNEL, MIDI_CC_CUSTOM_ALL, 0);
 }
 
-inline void updateLoop(int n) {
+static inline void updateLoop(int n) {
     switch (loopState[n]) {
         case LOOP_EMPTY:
             if (!DEL_KEY_PRESSED && !isRecording) {
@@ -294,13 +294,13 @@ inline void updateLoop(int n) {
     }
 }
 
-void forcePotEvents() {
+static void forcePotEvents() {
     for (int p = 0; p < POTS; p ++) {
         midi314.pushEvent(POT_EVENT, p);
     }
 }
 
-void processFunctionKey(int r, int c) {
+static void processFunctionKey(int r, int c) {
     byte fn  = keyFn[r][c] & 0xF0;
     byte arg = keyFn[r][c] & 0x0F;
 
@@ -358,13 +358,13 @@ void processFunctionKey(int r, int c) {
     }
 }
 
-inline byte getNote(int r, int c) {
+static inline byte getNote(int r, int c) {
     return midiChannel == PERC_MIDI_CHANNEL ?
         keyPerc[r][c] :
         pitchOffset + keyNotes[r][c];
 }
 
-void processEvents() {
+static void processEvents() {
     while (midi314.hasEvent()) {
         Event evt;
         midi314.pullEvent(&evt);
@@ -373,16 +373,7 @@ void processEvents() {
 
         switch (evt.kind) {
             case POT_EVENT:
-                potValue = potValues[evt.row];
-                switch (potFn[evt.row]) {
-                    case POT_VOLUME:     midi314.controlChange(midiChannel, MIDI_CC_CHANNEL_VOLUME, potValue); break;
-                    case POT_MODULATION: midi314.controlChange(midiChannel, MIDI_CC_MODULATIION, potValue);    break;
-                    case POT_EXPRESSION: midi314.controlChange(midiChannel, MIDI_CC_EXPRESSION,  potValue);    break;
-                    case POT_PITCH_BEND: midi314.pitchBend(midiChannel, ((int)potValue - 64) * 128 + 0x2000);  break;
-                    case POT_PAN:        midi314.controlChange(midiChannel, MIDI_CC_PAN, potValue);            break;
-                    case POT_REVERB:     midi314.controlChange(midiChannel, MIDI_CC_REVERB, potValue);         break;
-                    case POT_CHORUS:     midi314.controlChange(midiChannel, MIDI_CC_CHORUS, potValue);         break;
-                }
+                midi314.processPotEvent(midiChannel, potFn[evt.row], potValues[evt.row]);
                 break;
 
             case PRESS_EVENT:
@@ -410,7 +401,7 @@ void processEvents() {
     }
 }
 
-void reset() {
+static void reset() {
     midi314.reset();
 
     // Read the initial potentiometer values.
