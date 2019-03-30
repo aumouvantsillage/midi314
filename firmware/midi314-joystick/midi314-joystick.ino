@@ -3,7 +3,13 @@
 #include <midi314.h>
 
 // Pins connected to each potentiometer (from left to right).
-static const byte potPins[] = {A3, A2};
+static const byte potPins[] = {A0, A1, A6};
+
+// The step between consecutive potetiometer stops.
+#define POT_STEP 2
+
+// The hysteresis threshold to update the potentiometer value.
+#define POT_MARGIN 1
 
 // The number of potentiometers.
 #define POTS sizeof(potPins)
@@ -15,41 +21,40 @@ static const byte potPins[] = {A3, A2};
 static byte potValues[POTS];
 
 // The default assignment of potentiometers (Horizontal, Vertical).
-static const byte potFn[] = {POT_PITCH_BEND, POT_PITCH_BEND};
+static const byte potFn[] = {POT_PITCH_BEND, POT_PITCH_BEND, POT_BREATH};
 
-// The minimum value of each potentiometer.
-static int potLow[POTS];
+// The idle value of each potentiometer.
+static int potIdle[POTS];
 
-// The maximum value of each potentiometer.
-static int potHigh[POTS];
-
-static inline byte potRead(int p) {
-    return constrain(map(analogRead(potPins[p]), potLow[p], potHigh[p], 0, 127), 0, 127);
+static inline byte joyRead(int p) {
+    return constrain(map(analogRead(potPins[p]), potIdle[p] - 512, potIdle[p] + 511, 127, 0), 0, 127);
 }
 
 static void scan() {
-    if (potFn[0] == POT_PITCH_BEND && potFn[1] == POT_PITCH_BEND) {
-        // Select the pot value that is farther from the center.
-        int p0 = potRead(0);
-        int p1 = potRead(1);
-        int d0 = max(p0 - 64, 64 - p0);
-        int d1 = max(p1 - 64, 64 - p1);
-        // The horizontal potentiometer maps to a tone.
-        // The vertical potentiometer maps to a semitone.
-        int value = d0 > d1 ? p0 : map(p1, 0, 127, 32, 95);
-        // Process both potentiometer as one.
-        if (value != potValues[0]) {
-            potValues[0] = value;
-            midi314.pushEvent(POT_EVENT, 0);
-        }
+    // Joystick (potentiometers 0 and 1)
+
+    // Select the pot value that is farther from the center.
+    int p0 = joyRead(0);
+    int p1 = joyRead(1);
+    int d0 = max(p0 - 64, 64 - p0);
+    int d1 = max(p1 - 64, 64 - p1);
+    // The horizontal potentiometer maps to a tone.
+    // The vertical potentiometer maps to a semitone.
+    int value = d0 > d1 ? p0 : map(p1, 0, 127, 32, 95);
+    // Process both potentiometers as one.
+    if (value != potValues[0]) {
+        potValues[0] = value;
+        midi314.pushEvent(POT_EVENT, 0);
     }
-    else {
-        for (int p = 0; p < POTS; p ++) {
-            byte value = potRead(p);
-            if (value != potValues[p]) {
-                potValues[p] = value;
-                midi314.pushEvent(POT_EVENT, p);
-            }
+
+    // Others
+    for (int p = 2; p < POTS; p ++) {
+        int analogPrev = (int)potValues[p] * POT_STEP;
+        int analog = analogRead(potPins[p]);
+        if (analog > analogPrev + POT_STEP + POT_MARGIN ||
+            analog < analogPrev - POT_MARGIN) {
+            potValues[p] = constrain(analog / POT_STEP, 0, 127);
+            midi314.pushEvent(POT_EVENT, p);
         }
     }
 }
@@ -90,7 +95,9 @@ static void reset() {
 
     // Read the initial potentiometer values.
     for (int p = 0; p < POTS; p ++) {
-        potValues[p] = potRead(p);
+        potValues[p] = p < 2 ?
+            joyRead(p) :
+            potValues[p] = analogRead(potPins[p]) / POT_STEP;
         midi314.pushEvent(POT_EVENT, p);
     }
 
@@ -99,23 +106,15 @@ static void reset() {
 
 void setup() {
     for (int p = 0; p < POTS; p ++) {
-        int value = analogRead(potPins[p]);
-        potLow[p] = 2 * value - 1023;
-        if (potLow[p] < 0) {
-            potLow[p] = 0;
-        }
-        potHigh[p] = 2 * value;
-        if (potHigh[p] > 1023) {
-            potHigh[p] = 1023;
-        }
+        potIdle[p] = analogRead(potPins[p]);
     }
 
     Serial.begin(115200);
 
     reset();
 
-    // Call the scan function every millisecond.
-    Timer3.initialize(1000);
+    // Call the scan function every 2 milliseconds.
+    Timer3.initialize(2000);
     Timer3.attachInterrupt(scan);
 }
 

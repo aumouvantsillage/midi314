@@ -10,13 +10,16 @@
 
 // MIDI control change events.
 enum {
-    MIDI_CC_MODULATIION            = 1,
+    MIDI_CC_MODULATION             = 1,
+    MIDI_CC_BREATH                 = 2,
     MIDI_CC_CHANNEL_VOLUME         = 7,
     MIDI_CC_PAN                    = 10,
     MIDI_CC_EXPRESSION             = 11,
     MIDI_CC_REVERB                 = 91,
     MIDI_CC_CHORUS                 = 93,
     MIDI_CC_ALL_NOTES_OFF          = 123,
+    MIDI_CC_MONO_MODE_ON           = 126,
+    MIDI_CC_POLY_MODE_ON           = 127,
 
     // Looper events (non-standard).
     MIDI_CC_CUSTOM_RECORD          = 20,
@@ -47,6 +50,7 @@ enum {
     POT_NONE,
     POT_VOLUME,
     POT_MODULATION,
+    POT_BREATH,
     POT_EXPRESSION,
     POT_PITCH_BEND,
     POT_PAN,
@@ -64,7 +68,7 @@ enum {
     RELEASE_EVENT
 };
 
-#define KEY_EVENT_QUEUE_LENGTH 16
+#define KEY_EVENT_QUEUE_LENGTH 32
 
 typedef struct {
     int row;

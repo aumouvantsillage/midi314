@@ -18,6 +18,12 @@ static const byte potPins[] = {A9, A8, A7, A6, A3};
 // The number of keyboard columns.
 #define COLS sizeof(colPins)
 
+// The step between consecutive potetiometer stops.
+#define POT_STEP 8
+
+// The hysteresis threshold to update the potentiometer value.
+#define POT_MARGIN 2
+
 // The number of potentiometers.
 #define POTS sizeof(potPins)
 
@@ -69,7 +75,8 @@ enum {
     KEY_TEMPO  = 0x40,
     KEY_LOOP   = 0x50,
     KEY_PERC   = 0x60,
-    KEY_PANIC  = 0x70,
+    KEY_MONO   = 0x70,
+    KEY_PANIC  = 0x80,
 
     // Multi-purpose Up/Down key codes, to be combined with
     // KEY_OCTAVE, KEY_SEMI, KEY_PROG, KEY_TEMPO.
@@ -87,7 +94,7 @@ static const byte keyFn[ROWS][COLS] = {
     KEY_FN,            KEY_OCTAVE|KEY_DOWN, KEY_OCTAVE|KEY_UP,  KEY_TEMPO|KEY_DOWN, KEY_TEMPO|KEY_NONE, KEY_TEMPO|KEY_UP,   KEY_NONE,        // Top row, left
     KEY_SEMI|KEY_DOWN, KEY_SEMI  |KEY_UP,   KEY_PROG  |0,       KEY_PROG |1,        KEY_PROG |2,        KEY_PROG |3,        KEY_PROG|4,      // Middle row, left
     KEY_LOOP|KEY_DEL,  KEY_LOOP  |KEY_SOLO, KEY_LOOP  |KEY_ALL, KEY_LOOP |0,        KEY_LOOP |1,        KEY_LOOP |2,        KEY_LOOP|3,      // Bottom row, left
-    KEY_NONE,          KEY_NONE,            KEY_NONE,           KEY_NONE,           KEY_NONE,           KEY_NONE,           KEY_PERC,        // Top row, right
+    KEY_NONE,          KEY_NONE,            KEY_NONE,           KEY_NONE,           KEY_NONE,           KEY_MONO,           KEY_PERC,        // Top row, right
     KEY_PROG|5,        KEY_PROG  |6,        KEY_PROG  |7,       KEY_PROG |8,        KEY_PROG |9,        KEY_PROG |KEY_DOWN, KEY_PROG|KEY_UP, // Middle row, right
     KEY_LOOP|4,        KEY_LOOP  |5,        KEY_LOOP  |6,       KEY_LOOP |7,        KEY_LOOP |8,        KEY_NONE,           KEY_PANIC        // Bottom row, right
 };
@@ -95,12 +102,6 @@ static const byte keyFn[ROWS][COLS] = {
 #define FN_KEY_PRESSED keyPressed[0][0]
 #define DEL_KEY_PRESSED keyPressed[2][0]
 #define SOLO_KEY_PRESSED keyPressed[2][1]
-
-// The step between consecutive potetiometer stops.
-#define POT_STEP 8
-
-// The hysteresis threshold to update the potentiometer value.
-#define POT_MARGIN 2
 
 // The value of each potentiometer, range 0 to 127.
 static byte potValues[POTS];
@@ -135,6 +136,9 @@ static byte loopState[LOOPS];
 
 // The current MIDI channel.
 static byte midiChannel;
+
+// The current mono/polyphonic mode.
+static bool monoMode;
 
 // The default assignment of potentiometers.
 static const byte potFn[] = {POT_VOLUME, POT_PAN, POT_REVERB, POT_CHORUS, POT_MODULATION};
@@ -322,6 +326,15 @@ static void processFunctionKey(int r, int c) {
             }
             forcePotEvents();
             break;
+        case KEY_MONO:
+            monoMode = !monoMode;
+            if (monoMode) {
+                midi314.controlChange(midiChannel, MIDI_CC_MONO_MODE_ON, 0);
+            }
+            else {
+                midi314.controlChange(midiChannel, MIDI_CC_POLY_MODE_ON, 0);
+            }
+            break;
         case KEY_PROG:
             if (midiChannel != PERC_MIDI_CHANNEL) {
                 switch (arg) {
@@ -416,6 +429,9 @@ static void reset() {
     midiProgram = 0;
     currentLoop = 0;
     isRecording = false;
+    monoMode = false;
+
+    // FIXME send MIDI events to ensure this state is consistent with synth
 
     for (int l = 0; l < LOOPS; l ++) {
         loopState[l] = LOOP_EMPTY;

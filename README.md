@@ -39,6 +39,13 @@ the audio and MIDI interface.
 
 The [scripts](software/scripts) folder contains a sample configuration for using the
 midi@3:14 keyboard and software with [fluidsynth](http://www.fluidsynth.org/).
+Fluidsynth 2 is recommended for monophonic instruments and breath controller support.
+The following commands in the fluidsynth shell :
+
+```
+setbreathmode 0 0 1 1
+setlegatomode 0 1
+```
 
 TODO
 ====
