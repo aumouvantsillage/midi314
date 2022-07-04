@@ -1,6 +1,11 @@
 
 midi@3:14 is a home-made electronic keyboard for playing music.
 
+This repository is no longer maintained.
+Its content has been split into separate repositories available under the [Tiliosys](https://github.com/tiliosys) organization.
+
+----
+
 Keyboard
 ========
 
